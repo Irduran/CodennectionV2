@@ -101,7 +101,7 @@ const Dashboard = () => {
 
     if (result.isConfirmed) {
       await deleteDoc(doc(db, "posts", postId));
-      getUserPosts(userData.id);
+      getPosts(userData.id);
 
       Swal.fire({
         title: "Deleted!",
