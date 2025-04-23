@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isMyProfile, setIsMyProfile] = useState(false);
+  const [buttonLabel, setButtonLabel] = useState('Follow');
+  const [buttonClass, setButtonClass] = useState('default');
 
   const navigate = useNavigate();
 
@@ -35,6 +37,20 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
 
     checkFollowingStatus();
   }, [userData, currentUserId, isMyProfile]);
+
+  useEffect(() => {
+    if (isMyProfile || !currentUserId) return;
+
+    if (isFollowing) {
+      setButtonLabel('Codders');
+      setButtonClass('codders');
+    } else if (userData?.isPrivate) {
+      setButtonLabel('? Codders');
+    } else {
+      setButtonLabel('Follow');
+      setButtonClass('default');
+    }
+  }, [isFollowing, userData, isMyProfile, currentUserId]);
 
   const handleFollowToggle = async () => {
     if (!userData?.id || !currentUserId) {
@@ -84,6 +100,29 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     }
   };
 
+  const handleButtonClick = () => {
+    if (userData?.isPrivate && !isFollowing) {
+      console.log(`send request to ${userData?.nombre || userData?.email}`);
+    } else {
+      handleFollowToggle();
+    }
+  };
+
+  
+  const handleMouseEnter = () => {
+    if (isFollowing) {
+      setButtonLabel('!Codders');
+      setButtonClass('codders');
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (isFollowing) {
+      setButtonLabel('Codders');
+      setButtonClass('codders');
+    }
+  };
+
   return (
     <div className="my-profile-container">
       <div className="my-banner"></div>
@@ -122,9 +161,15 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
               <span>{userData?.isPrivate ? 'Private 🔒' : 'Public 🌍'}</span>
             </div>
 
+            
             {!isMyProfile && currentUserId && (
-              <button className="follow-btn" onClick={handleFollowToggle}>
-                {isFollowing ? 'Dejar de seguir' : 'Seguir'}
+              <button
+                className={`follow-btn ${buttonClass}`}
+                onClick={handleButtonClick}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                {buttonLabel}
               </button>
             )}
           </div>
