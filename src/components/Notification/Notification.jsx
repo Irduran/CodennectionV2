@@ -8,8 +8,13 @@ import {
   onSnapshot,
   orderBy,
   limit,
+  updateDoc,
+  doc,
+  arrayUnion,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase";
+import Swal from "sweetalert2";
 import { 
   markNotificationAsRead, 
   markAllNotificationsAsRead 
@@ -24,7 +29,7 @@ export const Notification = () => {
 
   useEffect(() => {
     if (!currentUser?.uid) return;
-  
+
     const notificationsRef = collection(db, "notifications");
     const q = query(
       notificationsRef,
@@ -32,11 +37,11 @@ export const Notification = () => {
       orderBy("createdAt", "desc"),
       limit(50)
     );
-  
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allNotifications = [];
       let unread = 0;
-  
+
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         allNotifications.push({
@@ -45,17 +50,46 @@ export const Notification = () => {
         });
         if (!data.read) unread++;
       });
-  
+
       setNotifications(allNotifications);
       setUnreadCount(unread);
     });
-  
+
     return () => unsubscribe();
   }, [currentUser?.uid]);
 
+  const handleAcceptRequest = async (notificationId, fromUserId) => {
+    try {
+      const currentUserRef = doc(db, 'users', currentUser.uid);
+      const targetUserRef = doc(db, 'users', fromUserId);
+
+      await updateDoc(currentUserRef, {
+        followers: arrayUnion(fromUserId),
+      });
+      await updateDoc(targetUserRef, {
+        following: arrayUnion(currentUser.uid),
+      });
+
+      Swal.fire("Success!", "You have accepted the request.", "success");
+      await deleteDoc(doc(db, "notifications", notificationId));
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      Swal.fire("Error", "Failed to accept the request.", "error");
+    }
+  };
+
+  const handleDeclineRequest = async (notificationId) => {
+    try {
+      await deleteDoc(doc(db, "notifications", notificationId));
+      Swal.fire("Success!", "You have declined the request.", "success");
+    } catch (error) {
+      console.error("Error declining request:", error);
+      Swal.fire("Error", "Failed to decline the request.", "error");
+    }
+  };
+
   const handleSingleRead = async (notificationId) => {
     await markNotificationAsRead(notificationId);
-    // Actualizar el estado local inmediatamente para mejor experiencia de usuario
     setNotifications(prev => prev.filter(n => n.id !== notificationId));
     setUnreadCount(prev => prev - 1);
   };
@@ -79,7 +113,7 @@ export const Notification = () => {
           <span className="notification-badge">{unreadCount}</span>
         )}
       </div>
-      
+
       {showDropdown && (
         <div className="notification-dropdown">
           <div className="notification-header">
@@ -93,35 +127,54 @@ export const Notification = () => {
               </button>
             )}
           </div>
-          
+
           {notifications.length > 0 ? (
             <div className="notification-list">
               {notifications.map(notification => (
                 <div 
                   key={notification.id} 
                   className={`notification-item ${notification.read ? 'read' : 'unread'}`}
-                  onClick={() => handleSingleRead(notification.id)}
                 >
                   <div className="notification-content">
+                    <img
+                      src={notification.profilePic || "https://via.placeholder.com/40"}
+                      alt="User Profile"
+                      className="notification-user-pic"
+                    />
                     <p>{notification.message}</p>
                     <small>
                       {new Date(notification.createdAt?.seconds * 1000).toLocaleString()}
                     </small>
                   </div>
-                  <button 
-                    className="mark-read-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSingleRead(notification.id);
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faCheck} />
-                  </button>
+                  
+                  {notification.type === "follow-request" ? (
+                    <div className="notification-actions">
+                      <button 
+                        className="button-notif" 
+                        onClick={() => handleAcceptRequest(notification.id, notification.from)}
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        className="button-notif" 
+                        onClick={() => handleDeclineRequest(notification.id)}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      className="mark-read-btn"
+                      onClick={() => handleSingleRead(notification.id)}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="notification-empty">Pretty quite here...</div>
+            <div className="notification-empty">Pretty quiet here...</div>
           )}
         </div>
       )}
