@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import edit from '../../assets/pencil-svgrepo-com.svg';
 import './ProfileHeader.css';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -122,6 +123,31 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
       setButtonClass('codders');
     }
   };
+  const handleReportUser = async () => {
+    const { value: reason } = await Swal.fire({
+      title: 'Reportar usuario',
+      input: 'text',
+      inputLabel: '¿Por qué quieres reportar este perfil?',
+      inputPlaceholder: 'Escribe la razón...',
+      showCancelButton: true,
+    });
+  
+    if (!reason) return;
+  
+    try {
+      const reportRef = collection(db, 'users', userData.id, 'reports');
+      await addDoc(reportRef, {
+        reason,
+        reportedBy: currentUserId,
+        reportedAt: serverTimestamp(),
+      });
+  
+      Swal.fire('¡Reporte enviado!', 'Gracias por ayudarnos a mejorar la comunidad.', 'success');
+    } catch (error) {
+      console.error('Error al reportar usuario:', error);
+      Swal.fire('Error', 'No se pudo enviar el reporte.', 'error');
+    }
+  };
 
   return (
     <div className="my-profile-container">
@@ -170,6 +196,15 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                 onMouseLeave={handleMouseLeave}
               >
                 {buttonLabel}
+              </button>
+            )}
+            {!isMyProfile && currentUserId && (
+              <button
+                className="report-btn"
+                style={{ marginTop: '0.5rem', backgroundColor: '#ff4d4d', color: 'white', borderRadius: '8px', padding: '5px 10px' }}
+                onClick={handleReportUser}
+              >
+                🚨 Reportar Usuario
               </button>
             )}
           </div>

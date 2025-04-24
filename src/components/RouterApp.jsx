@@ -7,10 +7,11 @@ import Registro from './Registro/Registro';
 import Perfil from './Perfil/Perfil';
 import EditProfile from './EditProfile/EditProfile';
 import OtherUser from './OtherUser/OtherUser'; 
+import AdminPanel from './AdminPanel/AdminPanel';
 
 export const RouterApp = () => {
     const location = useLocation();
-    const validRoutes = ['/', '/dashboard', '/registro', '/profile', '/edit', '/user'];
+    const validRoutes = ['/', '/dashboard', '/registro', '/profile', '/editprofile', '/user','admin'];
 
     return (
         <Routes>
@@ -20,6 +21,7 @@ export const RouterApp = () => {
             <Route path="/error404" element={<NotFound />} />
             <Route path="/profile" element={<Perfil />} />
             <Route path="/editprofile" element={<EditProfile />} />
+            <Route path="/admin" element={<AdminPanel />} />
             
             {/* Nueva ruta dinámica para perfiles de usuario */}
             <Route path="/user/:userId" element={<OtherUser />} />

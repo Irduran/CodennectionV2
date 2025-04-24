@@ -1,0 +1,224 @@
+/* src/components/AdminPanel/AdminPanel.css */
+.admin-panel {
+    display: flex;
+    height: 100vh;
+    color: white;
+  }
+  
+  .sidebar {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .sidebar .logo {
+    font-size: 2rem;
+    text-align: center;
+    font-family: monospace;
+  }
+  
+  
+  .sidebar button {
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    background: #b39ddb;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .sidebar button.active {
+    background: #9575cd;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 2rem;
+  }
+
+  .section-title {
+    color: white;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-text {
+    color: white;
+    margin-left: 10px;
+  }
+  
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 1rem;
+  }
+  
+  .user-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    position: relative;
+  }
+
+  .user-card:hover {
+    transform: scale(1.02);
+  }
+  
+  .user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 10px auto;
+  }
+
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .default-avatar {
+    background: #ccc;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user-info {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  
+  .warning-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 16px;
+    background: #ffd166;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+  }
+  
+  .user-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .user-email {
+    font-size: 12px;
+    color: #020101;
+    word-break: 0;
+  }
+  
+.suspend-btn {
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: 0.3s ease;
+  }
+
+  .suspend-btn:hover {
+    background-color: #ff4c4c;
+  }
+
+  .post-image {
+    width: 100%;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  
+  .post-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .post-text {
+    font-size: 0.95rem;
+    color: #333;
+    text-align: center;
+    margin: 10px 0;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  
+  .reactivate-btn {
+    background-color: #28c76f;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: 0.3s ease;
+  }
+
+ .reactivate-btn:hover {
+  background-color: #20b260;
+}
+
+.filter-btn {
+    background-color: #6757e3;
+    color: white;
+    font-weight: bold;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: 0.3s ease;
+  }
+  
+  .filter-btn:hover {
+    background-color: #4c3db9;
+  }
+
+  .search-bar {
+    width: 100%;
+    max-width: 300px;
+    padding: 8px;
+    margin: 10px 0 20px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  .author-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .author-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  
+  .post-media {
+    max-width: 100%;
+    border-radius: 8px;
+    margin-top: 10px;
+  }

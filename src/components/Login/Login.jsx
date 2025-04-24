@@ -59,10 +59,21 @@ const Login = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = { email: user.email, uid: user.uid, ...userDoc.data() };
-          sessionStorage.setItem("userData", JSON.stringify(userData)); // Guardar en sesión
+          sessionStorage.setItem("userData", JSON.stringify(userData));
+          const data = userDoc.data();
+          if (data.isSuspended) {
+            Swal.fire("Account Suspended 🚫", "Your account has been suspended. Please contact support.", "error");
+            return;
+          }
 
           Swal.fire("Welcome Again!!🌟", "You have successfully logged in", "success");
-          navigate("/dashboard");
+        
+          // 🔍 Verificar dominio del correo para redirigir al panel de administrador
+          if (user.email.endsWith("@codennection.com")) {
+            navigate("/admin");
+          } else {
+            navigate("/dashboard");
+          }
         } else {
           Swal.fire("Error", "User data not found ❌", "error");
         }
