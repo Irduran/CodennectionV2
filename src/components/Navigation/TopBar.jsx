@@ -13,10 +13,20 @@ const TopBar = ({ onSearchChange }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
+  const [userData, setUserData] = useState(); 
 
   const handleLogoClick = () => {
     navigate("/dashboard");
   };
+
+  useEffect(() => {
+    const storedUserData = JSON.parse(sessionStorage.getItem("userData"));
+    if (!storedUserData) {
+      navigate("/"); 
+    } else {
+      setUserData(storedUserData);
+    }
+  }, [navigate]);
 
   const handleSearch = async (term) => {
     if (!term.trim()) {
@@ -108,7 +118,8 @@ const TopBar = ({ onSearchChange }) => {
             )}
           </div>
         </div>
-        <Notification />
+        {userData && <Notification currentUserId={userData.uid} />}
+
         <Logout />
       </Navbar>
     </div>
