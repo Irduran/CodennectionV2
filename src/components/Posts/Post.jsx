@@ -109,18 +109,6 @@ const Post = ({
     }
   };
 
-  const handlePrev = () => {
-    setCurrentMediaIndex((prevIndex) =>
-      prevIndex === 0 ? media.length - 1 : prevIndex - 1
-    );
-  };
-
-  const handleNext = () => {
-    setCurrentMediaIndex((prevIndex) =>
-      prevIndex === media.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-
   const handleShare = async () => {
     if (!currentUser) return;
   
@@ -153,6 +141,44 @@ const Post = ({
       
     }
   };
+  const handleReport = async () => {
+    if (!currentUser) return;
+  
+    const { value: reason } = await Swal.fire({
+      title: "Report Post",
+      input: "text",
+      inputLabel: "Reason for report",
+      inputPlaceholder: "Enter your reason...",
+      showCancelButton: true,
+    });
+  
+    if (reason) {
+      try {
+        const reportRef = collection(db, "posts", id, "reports");
+        await addDoc(reportRef, {
+          reason,
+          reportedBy: currentUser.uid,
+          reportedAt: serverTimestamp(),
+        });
+  
+        Swal.fire({
+          icon: "success",
+          title: "Reported!",
+          text: "Thank you for reporting this post.",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } catch (error) {
+        console.error("Error reporting post:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "There was a problem reporting this post.",
+        });
+      }
+    }
+  };
+  
 
   return (
     <div className="post-container">
@@ -193,7 +219,7 @@ const Post = ({
                 <div className="option" onClick={onDelete}>Delete❌</div>
               </>
             )}
-            <div className="option">Report👀</div>
+            <div className="option" onClick={handleReport}>Report👀</div>
           </div>
         )}
       </div>
@@ -211,13 +237,7 @@ const Post = ({
 
         {media.length > 0 && (
           <div className="media-item">
-            {media.length > 1 && (
-              <>
-                <div className="control-prev" onClick={handlePrev}>❮</div>
-                <div className="control-next" onClick={handleNext}>❯</div>
-              </>
-            )}
-
+            
             {media[currentMediaIndex].type === "image" ? (
               <img
                 src={media[currentMediaIndex].url}
