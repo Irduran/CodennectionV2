@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import edit from '../../assets/pencil-svgrepo-com.svg';
 import './ProfileHeader.css';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -11,6 +11,8 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [isMyProfile, setIsMyProfile] = useState(false);
   const [buttonLabel, setButtonLabel] = useState('Follow');
   const [buttonClass, setButtonClass] = useState('default');
+  const [currentData, setCurrentData] = useState();
+
 
   const navigate = useNavigate();
 
@@ -101,11 +103,65 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     }
   };
 
-  const handleButtonClick = () => {
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!currentUserId) return;
+      try {
+        const docRef = doc(db, "users", currentUserId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setCurrentData(docSnap.data());
+        }
+      } catch (error) {
+        console.error("Error fetching current user data:", error);
+      }
+    };
+  
+    fetchCurrentUser();
+  }, [currentUserId]);
+  
+
+  const handleButtonClick = async () => {
     if (userData?.isPrivate && !isFollowing) {
-      console.log(`send request to ${userData?.nombre || userData?.email}`);
+      await sendNotification(userData?.id);
+      Swal.fire({
+        title: 'Friend Request Sent',
+        text: 'The request has been successfully sent!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+        });
     } else {
-      handleFollowToggle();
+      await handleFollowToggle();
+    }
+  };
+
+
+  const sendNotification = async (recipientId) => {
+    try {
+      const q = query(
+        collection(db, 'notifications'),
+        where('to', '==', recipientId),
+        where('from', '==', currentUserId),
+        where('type', '==', 'follow_request')
+      );
+  
+      const querySnapshot = await getDocs(q);
+  
+      if (!querySnapshot.empty) {
+        return;
+      }
+  
+      await addDoc(collection(db, 'notifications'), {
+        to: recipientId,
+        from: currentUserId,
+        type: 'follow_request',
+        message: `${currentData?.nombre} sent you a follow request.`,
+        profilePic: currentData?.profilePic,
+        createdAt: serverTimestamp(),
+      });
+  
+    } catch (error) {
+      console.error('Error checking/sending notification:', error);
     }
   };
 
