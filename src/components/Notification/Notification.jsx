@@ -1,44 +1,73 @@
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell } from "@fortawesome/free-solid-svg-icons";
-import { collection, query, where, onSnapshot, updateDoc, doc, arrayUnion, deleteDoc } from "firebase/firestore";
+import { faBell, faCheck, faCheckDouble } from "@fortawesome/free-solid-svg-icons";
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot,
+  orderBy,
+  limit,
+  updateDoc,
+  doc,
+  arrayUnion,
+  deleteDoc,
+} from "firebase/firestore";
 import { db } from "../../firebase";
 import Swal from "sweetalert2";
+import { 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead 
+} from "../../services/notificationService";
 import "./Notification.css";
 
-export const Notification = ({ currentUserId }) => {
+export const Notification = () => {
   const [notifications, setNotifications] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);  
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const currentUser = JSON.parse(sessionStorage.getItem("userData"));
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUser?.uid) return;
 
+    const notificationsRef = collection(db, "notifications");
     const q = query(
-      collection(db, "notifications"),
-      where("to", "==", currentUserId),
+      notificationsRef,
+      where("recipientId", "==", currentUser.uid),
+      orderBy("createdAt", "desc"),
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setNotifications(notifData);
+      const allNotifications = [];
+      let unread = 0;
+
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        allNotifications.push({
+          id: doc.id,
+          ...data
+        });
+        if (!data.read) unread++;
+      });
+
+      setNotifications(allNotifications);
+      setUnreadCount(unread);
     });
 
     return () => unsubscribe();
-  }, [currentUserId]);
-
+  }, [currentUser?.uid]);
 
   const handleAcceptRequest = async (notificationId, fromUserId) => {
     try {
-
-      const currentUserRef = doc(db, 'users', currentUserId);
+      const currentUserRef = doc(db, 'users', currentUser.uid);
       const targetUserRef = doc(db, 'users', fromUserId);
 
-
       await updateDoc(currentUserRef, {
-        followers: arrayUnion(fromUserId), 
+        followers: arrayUnion(fromUserId),
       });
       await updateDoc(targetUserRef, {
-        following: arrayUnion(currentUserId),
+        following: arrayUnion(currentUser.uid),
       });
 
       Swal.fire("Success!", "You have accepted the request.", "success");
@@ -49,12 +78,9 @@ export const Notification = ({ currentUserId }) => {
     }
   };
 
-
   const handleDeclineRequest = async (notificationId) => {
     try {
-
       await deleteDoc(doc(db, "notifications", notificationId));
-
       Swal.fire("Success!", "You have declined the request.", "success");
     } catch (error) {
       console.error("Error declining request:", error);
@@ -62,47 +88,96 @@ export const Notification = ({ currentUserId }) => {
     }
   };
 
-
-  const toggleDropdown = () => {
-    setShowDropdown(prevState => !prevState);
+  const handleSingleRead = async (notificationId) => {
+    await markNotificationAsRead(notificationId);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setUnreadCount(prev => prev - 1);
   };
 
-return (
-  <div className="topbar-notification-wrapper">
-  <div className="topbar-notification-round">
-    <FontAwesomeIcon
-      icon={faBell}
-      className="topbar-notification"
-      onClick={toggleDropdown}
-    />
-  </div>
+  const handleMarkAllAsRead = async () => {
+    const success = await markAllNotificationsAsRead(currentUser.uid);
+    if (success) {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  };
 
-  {showDropdown && notifications.length > 0 && (
-    <div className="notification-dropdown">
-      {notifications.map((notification) => (
-        <div key={notification.id} className="notification-item">
+  return (
+    <div className="notification-container">
+      <div 
+        className="notification-icon-container"
+        onClick={() => setShowDropdown(!showDropdown)}
+      >
+        <FontAwesomeIcon icon={faBell} className="notification-icon" />
+        {unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount}</span>
+        )}
+      </div>
+
+      {showDropdown && (
+        <div className="notification-dropdown">
           <div className="notification-header">
-            <img
-              src={notification.profilePic || "https://via.placeholder.com/40"}
-              alt="User Profile"
-              className="notification-user-pic"
-            />
-            <p className="notification-message">{notification.message}</p>
+            <h4>New Actions🫣</h4>
+            {notifications.length > 0 && (
+              <button 
+                onClick={handleMarkAllAsRead}
+                className="mark-all-read-btn"
+              >
+                <FontAwesomeIcon icon={faCheckDouble} /> Bye bye all 👋🏼
+              </button>
+            )}
           </div>
-          <div className="notification-actions">
-            <button className="button-notif" onClick={() => handleAcceptRequest(notification.id, notification.from)}>
-              Accept
-            </button>
-            <button className="button-notif" onClick={() => handleDeclineRequest(notification.id)}>
-              Decline
-            </button>
-          </div>
+
+          {notifications.length > 0 ? (
+            <div className="notification-list">
+              {notifications.map(notification => (
+                <div 
+                  key={notification.id} 
+                  className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+                >
+                  <div className="notification-content">
+                    <img
+                      src={notification.profilePic || "https://via.placeholder.com/40"}
+                      alt="User Profile"
+                      className="notification-user-pic"
+                    />
+                    <p>{notification.message}</p>
+                    <small>
+                      {new Date(notification.createdAt?.seconds * 1000).toLocaleString()}
+                    </small>
+                  </div>
+                  
+                  {notification.type === "follow-request" ? (
+                    <div className="notification-actions">
+                      <button 
+                        className="button-notif" 
+                        onClick={() => handleAcceptRequest(notification.id, notification.from)}
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        className="button-notif" 
+                        onClick={() => handleDeclineRequest(notification.id)}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      className="mark-read-btn"
+                      onClick={() => handleSingleRead(notification.id)}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="notification-empty">Pretty quiet here...</div>
+          )}
         </div>
-      ))}
+      )}
     </div>
-  )}
-</div>
-);
+  );
 };
-
-

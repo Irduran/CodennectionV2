@@ -6,9 +6,12 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  getDoc
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import "./CommentSection.css";
+import { sendNotification } from "../../services/notificationService";
 
 const CommentSection = ({ postId }) => {
   const [comment, setComment] = useState("");
@@ -30,27 +33,51 @@ const CommentSection = ({ postId }) => {
     return () => unsubscribe();
   }, [postId]);
 
+
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
-
+  
     const commentData = {
-        commentedBy: currentUser.nombre,
-        commentedUid: currentUser.uid,
-        profilePic: currentUser.profilePic || "",
-        text: comment.trim(),
-        createdAt: serverTimestamp(),
-      };
-      
-
+      commentedBy: currentUser.nombre,
+      commentedUid: currentUser.uid,
+      profilePic: currentUser.profilePic || "",
+      text: comment.trim(),
+      createdAt: serverTimestamp(),
+    };
+  
     try {
-      await addDoc(collection(db, "posts", postId, "comments"), commentData);
+      const postRef = doc(db, "posts", postId);
+      const postSnap = await getDoc(postRef);
+      
+      if (postSnap.exists()) {
+        const postData = postSnap.data();
+        
+        // Guardar el comentario primero
+        const commentRef = await addDoc(collection(db, "posts", postId, "comments"), commentData);
+        
+        // Solo notificar si no es el propio autor
+        if (postData.userId !== currentUser.uid) {
+          const notificationResult = await sendNotification({
+            recipientId: postData.userId,
+            senderId: currentUser.uid,
+            senderName: currentUser.nombre,
+            type: 'comment',
+            postId: postId,
+            commentId: commentRef.id  // Pasamos el ID del comentario
+          });
+  
+          if (!notificationResult) {
+            console.warn("Notification failed but comment was saved");
+          }
+        }
+      }
+  
       setComment("");
     } catch (error) {
-      console.error("Error adding comment:", error);
+      console.error("Error in comment submission:", error);
     }
   };
-
   return (
     <div className="comment-section">
       <form onSubmit={handleCommentSubmit} className="comment-form">
