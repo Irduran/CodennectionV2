@@ -84,56 +84,65 @@ const OtherUser = () => {
     setEditedText(e.target.value);
   };
 
+  console.log(userData)
+
   return (
     <>
       <TopBar />
       <div className="mypost-container">
-      {userData && currentUserId && (
-          <ProfileHeader
-            userData={userData}
-            currentUserId={currentUserId}
-            refreshUser={refreshUser}
-          />
-        )}
-
-        {/* Posts or Private notice */}
-        {(!userData?.isPrivate || userData?.followers?.includes(currentUserId)) ? (
-          <div className="user-posts-section">
-            {userPosts.length === 0 ? (
-              <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
-                Este usuario aún no ha publicado nada.
-              </p>
-            ) : (
-              userPosts.map((post) => (
-                <PostUser
-                  key={post.id}
-                  id={post.id}
-                  username={post.username}
-                  profilePic={post.profilePic}
-                  time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
-                  text={editingPostId === post.id ? editedText : post.text}
-                  media={post.media}
-                  quacks={post.quacks}
-                  sharedBy={post.sharedBy}
-                  comments={post.comments}
-                  isEditing={editingPostId === post.id}
-                  onEdit={() => handleEdit(post.id, post.text)}
-                  onSave={() => handleSave(post.id)}
-                  onDelete={() => handleDelete(post.id)}
-                  onChangeEdit={handleChangeEdit}
-                />
-              ))
-            )}
-          </div>
-        ) : (
+        {userData?.isDeactivated ? (
           <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
-            📛 Este perfil es privado.
+            🚫 Deactivated Account
           </p>
+        ) : (
+          <>
+            {userData && currentUserId && (
+              <ProfileHeader
+                userData={userData}
+                currentUserId={currentUserId}
+                refreshUser={refreshUser}
+              />
+            )}
+  
+            {/* Posts or Private notice */}
+            {(!userData?.isPrivate || userData?.followers?.includes(currentUserId)) ? (
+              <div className="user-posts-section">
+                {userPosts.length === 0 ? (
+                  <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
+                    Este usuario aún no ha publicado nada.
+                  </p>
+                ) : (
+                  userPosts.map((post) => (
+                    <PostUser
+                      key={post.id}
+                      id={post.id}
+                      username={post.username}
+                      profilePic={post.profilePic}
+                      time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
+                      text={editingPostId === post.id ? editedText : post.text}
+                      media={post.media}
+                      quacks={post.quacks}
+                      sharedBy={post.sharedBy}
+                      comments={post.comments}
+                      isEditing={editingPostId === post.id}
+                      onEdit={() => handleEdit(post.id, post.text)}
+                      onSave={() => handleSave(post.id)}
+                      onDelete={() => handleDelete(post.id)}
+                      onChangeEdit={handleChangeEdit}
+                    />
+                  ))
+                )}
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
+                📛 Este perfil es privado.
+              </p>
+            )}
+          </>
         )}
-
       </div>
     </>
-  );
+  );  
 };
 
 export default OtherUser;
