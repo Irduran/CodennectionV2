@@ -44,13 +44,46 @@ const Dashboard = () => {
       ...doc.data(),
     }));
 
-    const filteredData = data.filter(
-      (post) =>
-        freshUserData.following.includes(post.userId) ||
-        post.userId === currentUser.uid
-    );
+    const filteredData = [];
 
+    const userIds = [...new Set(data.map(post => post.userId))];
+
+    const userPromises = userIds.map((userId) => {
+      const userRef = doc(db, "users", userId);
+      return getDoc(userRef).then((userSnap) => {
+        if (userSnap.exists()) {
+          return { userId, userData: userSnap.data() };
+        } else {
+          return { userId, userData: null };
+        }
+      });
+    });
+    
+    const userSnapshots = await Promise.all(userPromises);
+    
+    const usersData = userSnapshots.reduce((acc, { userId, userData }) => {
+      if (userData) {
+        acc[userId] = userData;
+      }
+      return acc;
+    }, {});
+    
+    for (const post of data) {
+      const postUserData = usersData[post.userId];
+    
+      if (postUserData && !postUserData.isDeactivated) {
+        if (
+          freshUserData.following.includes(post.userId) ||
+          post.userId === currentUser.uid
+        ) {
+          filteredData.push(post);
+        }
+      }
+    }
+    
     setPosts(filteredData);
+    
+    
   };
 
   useEffect(() => {
@@ -151,10 +184,16 @@ const Dashboard = () => {
   };
 
   return (
-    <>
-      <TopBar onSearchChange={setSearchTerm} />
-      {userData && <ProfileCard user={userData} />}
-      <div className="dashboard-container">
+<>
+  <TopBar onSearchChange={setSearchTerm} />
+  {userData && <ProfileCard user={userData} />}
+  <div className="dashboard-container">
+    {userData?.isDeactivated ? (
+      <div className="deactivated">
+        <p>Your account is deactivated.</p>
+      </div>
+    ) : (
+      <>
         <CreatePost onPostCreated={() => getPosts(userData)} />
 
         {searchTerm.trim() && filteredPosts.length === 0 ? (
@@ -178,7 +217,7 @@ const Dashboard = () => {
               }
               media={post.media}
               quacks={post.quacks}
-              sharedBy ={post.sharedBy}
+              sharedBy={post.sharedBy}
               comments={post.comments}
               isEditing={editingPostId === post.id}
               onEdit={() => handleEdit(post.id, post.text)}
@@ -188,8 +227,10 @@ const Dashboard = () => {
             />
           ))
         )}
-      </div>
-    </>
+      </>
+    )}
+  </div>
+</>
   );
 };
 

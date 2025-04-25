@@ -106,6 +106,7 @@ function EditProfile() {
         bio: bio,
         programmingLanguages: programmingLanguages,
         isPrivate: isPrivate,
+        isDeactivated: isDeactivated,
         followers: followers,
         following: following
       };
@@ -292,8 +293,6 @@ function EditProfile() {
       throw error;
     }
   };
-  
-  
   
 
   return (

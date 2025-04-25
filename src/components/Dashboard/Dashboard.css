@@ -13,5 +13,10 @@
 }
 
 
-
+.deactivated{
+  text-align: center;
+  padding: 2rem;
+  color: white;
+  margin-top: 100px;
+}
 
