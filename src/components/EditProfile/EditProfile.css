@@ -313,3 +313,20 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.delete-button {
+  padding: 10px 16px;
+  font-size: 14px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 20px;
+  width: 60% !important;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #e04343;
+}

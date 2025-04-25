@@ -6,7 +6,6 @@ import {
   query, 
   where, 
   onSnapshot,
-  orderBy,
   limit,
   updateDoc,
   doc,
@@ -30,14 +29,13 @@ export const Notification = () => {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-
     const notificationsRef = collection(db, "notifications");
     const q = query(
       notificationsRef,
       where("recipientId", "==", currentUser.uid),
-      orderBy("createdAt", "desc"),
       limit(50)
     );
+
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allNotifications = [];
