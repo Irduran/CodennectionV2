@@ -183,3 +183,34 @@
     width: 3px;
     background-color: #4a8fe7;
   }
+
+  .notification-user-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%; 
+    object-fit: cover;
+    margin-right: 10px;
+  }
+  
+  .notification-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-left: 10px;
+  }
+  
+  .button-notif {
+    background-color: #4a8fe7;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .button-notif:hover {
+    background-color: #3a76c3;
+  }
+  

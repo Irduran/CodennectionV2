@@ -46,7 +46,10 @@ export function GoogleAuth() {
             uid: user.uid,
             ...userDoc.data()  // mergea lo que tengas guardado como nombre, bio, etc.
           };
-
+          if (userDoc.data().isSuspended) {
+            Swal.fire("Account Suspended 🚫", "Your account has been suspended. Please contact support.", "error");
+            return;
+          }
           sessionStorage.setItem("userData", JSON.stringify(userData));
           Swal.fire("Welcome! ⭐", "Have fun 🐤", "success");
           navigate("/dashboard");

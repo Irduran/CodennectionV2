@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { deleteUser } from "firebase/auth";
 import { auth, db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./EditProfile.css";
@@ -19,6 +21,7 @@ function EditProfile() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [isDeactivated, setIsDeactivated] = useState([]);
 
   useEffect(() => {
     const userData = sessionStorage.getItem("userData");
@@ -30,6 +33,7 @@ function EditProfile() {
       setProfilePicUrl(parsedUser.profilePic || "");
       setProgrammingLanguages(parsedUser.programmingLanguages || []);
       setIsPrivate(parsedUser.isPrivate || false);
+      setIsDeactivated(parsedUser.isDeactivated || false);
       setFollowers(parsedUser.followers || [])
       setFollowing(parsedUser.following || [])
     } else {
@@ -107,9 +111,11 @@ function EditProfile() {
         bio: bio,
         programmingLanguages: programmingLanguages,
         isPrivate: isPrivate,
+        isDeactivated: isDeactivated,
         followers: latestData.followers || [],
-        following: latestData.following || []
+        following: latestData.following || [],
       };
+      
       
 
       // Guardar datos en Firebase
@@ -149,6 +155,153 @@ function EditProfile() {
       setProfilePicUrl(URL.createObjectURL(file));
     }
   };
+  const handleDeleteAccount = async () => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This action will permanently delete your account.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        const currentUser = auth.currentUser;
+  
+        await removeFromFollowersAndFollowing(currentUser.uid);
+
+        await deleteUserPosts(currentUser.uid);
+
+        await deleteUserComments(currentUser.uid);
+        
+        await removeUserFromQuacks(currentUser.uid);
+  
+
+        await deleteDoc(doc(db, "users", currentUser.uid));
+  
+        await deleteUser(currentUser);
+  
+        Swal.fire("Deleted!", "Your account has been deleted.", "success");
+  
+        sessionStorage.clear();
+        navigate("/");
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        Swal.fire("Error", "Could not delete your account. Please re-login and try again.", "error");
+      }
+    }
+  };
+  
+  const removeFromFollowersAndFollowing = async (userId) => {
+    try {
+      const usersRef = collection(db, "users");
+      const usersSnapshot = await getDocs(usersRef);
+
+      const updatePromises = usersSnapshot.docs.map(async (userDoc) => {
+        const userData = userDoc.data();
+  
+        if (userData.followers && userData.followers.includes(userId)) {
+          const updatedFollowers = userData.followers.filter(followerId => followerId !== userId);
+          await updateDoc(doc(db, "users", userDoc.id), {
+            followers: updatedFollowers,
+          });
+        }
+  
+        if (userData.following && userData.following.includes(userId)) {
+          const updatedFollowing = userData.following.filter(followingId => followingId !== userId);
+          await updateDoc(doc(db, "users", userDoc.id), {
+            following: updatedFollowing,
+          });
+        }
+      });
+  
+      await Promise.all(updatePromises);
+      console.log("User removed from all followers and following lists.");
+    } catch (error) {
+      console.error("Error removing from followers and following:", error);
+      throw error;
+    }
+  };
+  
+  const deleteUserPosts = async (userId) => {
+    try {
+      const postsRef = collection(db, "posts");
+      const userPostsQuery = query(postsRef, where("uid", "==", userId));
+      const querySnapshot = await getDocs(userPostsQuery);
+  
+      const deletePromises = querySnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+  
+      await Promise.all(deletePromises);
+      console.log("All user posts deleted.");
+    } catch (error) {
+      console.error("Error deleting user posts:", error);
+      throw error;
+    }
+  };  
+
+  const deleteUserComments = async (userId) => {
+    try {
+
+      const postsRef = collection(db, "posts");
+      const snapshot = await getDocs(postsRef);
+
+      const deletePromises = snapshot.docs.map(async (postDoc) => {
+        const commentsRef = collection(postDoc.ref, "comments");
+        const commentsSnapshot = await getDocs(commentsRef);
+  
+
+        const deleteCommentPromises = commentsSnapshot.docs.map(commentDoc => {
+          const commentData = commentDoc.data();
+          if (commentData.commentedUid === userId) {
+            return deleteDoc(commentDoc.ref); 
+          }
+        });
+  
+
+        await Promise.all(deleteCommentPromises);
+      });
+  
+
+      await Promise.all(deletePromises);
+      console.log("User comments deleted.");
+    } catch (error) {
+      console.error("Error deleting user comments:", error);
+      throw error;
+    }
+  };
+  
+  
+  const removeUserFromQuacks = async (userId) => {
+    try {
+      const postsRef = collection(db, "posts");
+      const snapshot = await getDocs(postsRef);
+  
+      const updatePromises = snapshot.docs.map(async (postDoc) => {
+        const postData = postDoc.data();
+  
+        if (postData.quackedBy?.includes(userId)) {
+          const updatedQuackedBy = postData.quackedBy.filter(id => id !== userId);
+          const updatedQuacks = updatedQuackedBy.length;
+  
+          await updateDoc(postDoc.ref, {
+            quackedBy: updatedQuackedBy,
+            quacks: updatedQuacks
+          });
+        }
+      });
+  
+      await Promise.all(updatePromises);
+      console.log("User removed from all quacks.");
+    } catch (error) {
+      console.error("Error removing user from quacks:", error);
+      throw error;
+    }
+  };
+  
 
   return (
     <>
@@ -173,6 +326,16 @@ function EditProfile() {
                     onChange={(e) => setIsPrivate(e.target.checked)}
                   />
                   Make my account private 🔒
+                </label>
+              </div>
+              <div className="checkbox-container">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={isDeactivated}
+                    onChange={(e) => setIsDeactivated(e.target.checked)}
+                  />
+                  Deactivate account
                 </label>
               </div>
 
@@ -216,6 +379,12 @@ function EditProfile() {
                   </li>
                 ))}
               </ul>
+              <button 
+                onClick={handleDeleteAccount} 
+                className="delete-button"
+              >
+                🗑️ Delete Account
+              </button>
             </div>
             <div className="form-column">
               <div
@@ -279,6 +448,7 @@ function EditProfile() {
           <button onClick={handleEditProfile} disabled={isUploading}>
             {isUploading ? "Saving..." : "⭐Save⭐"}
           </button>
+
         </div>
       </div>
     </>

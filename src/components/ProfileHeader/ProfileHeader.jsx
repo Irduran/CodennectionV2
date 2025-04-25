@@ -3,13 +3,13 @@ import edit from '../../assets/pencil-svgrepo-com.svg';
 import './ProfileHeader.css';
 import {
   doc, getDoc, updateDoc, arrayUnion, arrayRemove,
-  addDoc, collection, serverTimestamp
+  addDoc, collection, serverTimestamp, query, where, getDocs
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import FollowersAndFollowing from '../Perfil/FollowersAndFollowing';
-import SuggestedFriends from '../Perfil/SuggestedFriends';
+import SuggestedFriends from "../Perfil/SuggestedFriends";
 
 export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -19,12 +19,9 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [currentData, setCurrentData] = useState(null);
 
   const navigate = useNavigate();
-
-  const goToEdit = () => {
-    navigate("/editprofile");
-  };
 
   useEffect(() => {
     if (userData && currentUserId) {
@@ -35,16 +32,37 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   useEffect(() => {
     const checkFollowingStatus = async () => {
       if (!userData?.id || !currentUserId || isMyProfile) return;
+
       const currentUserRef = doc(db, 'users', currentUserId);
       const currentUserSnap = await getDoc(currentUserRef);
       const currentUserData = currentUserSnap.data();
+
       setIsFollowing(currentUserData?.following?.includes(userData.id) || false);
     };
+
     checkFollowingStatus();
   }, [userData, currentUserId, isMyProfile]);
 
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!currentUserId) return;
+      try {
+        const docRef = doc(db, "users", currentUserId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setCurrentData(docSnap.data());
+        }
+      } catch (error) {
+        console.error("Error fetching current user data:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, [currentUserId]);
+
+  useEffect(() => {
     if (isMyProfile || !currentUserId) return;
+
     if (isFollowing) {
       setButtonLabel('Codders');
       setButtonClass('codders');
@@ -58,11 +76,15 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
 
   const handleFollowToggle = async () => {
     if (!userData?.id || !currentUserId) return;
+
     const currentUserRef = doc(db, 'users', currentUserId);
     const targetUserRef = doc(db, 'users', userData.id);
+
     const currentUserSnap = await getDoc(currentUserRef);
     const targetUserSnap = await getDoc(targetUserRef);
+
     if (!currentUserSnap.exists() || !targetUserSnap.exists()) return;
+
     const currentUserData = currentUserSnap.data();
     const alreadyFollowing = currentUserData.following?.includes(userData.id);
 
@@ -100,29 +122,50 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     }
   };
 
-  const handleReportUser = async () => {
-    const { value: reason } = await Swal.fire({
-      title: 'Reportar usuario',
-      input: 'text',
-      inputLabel: '¿Por qué quieres reportar este perfil?',
-      inputPlaceholder: 'Escribe la razón...',
-      showCancelButton: true,
-    });
-
-    if (!reason) return;
-
+  const sendNotification = async (recipientId) => {
     try {
-      const reportRef = collection(db, 'users', userData.id, 'reports');
-      await addDoc(reportRef, {
-        reason,
-        reportedBy: currentUserId,
-        reportedAt: serverTimestamp(),
-      });
+      const q = query(
+        collection(db, 'notifications'),
+        where('to', '==', recipientId),
+        where('from', '==', currentUserId),
+        where('type', '==', 'follow_request')
+      );
 
-      Swal.fire('¡Reporte enviado!', 'Gracias por ayudarnos a mejorar la comunidad.', 'success');
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        return;
+      }
+
+      await addDoc(collection(db, 'notifications'), {
+        to: recipientId,
+        from: currentUserId,
+        type: 'follow_request',
+        message: `${currentData?.nombre} sent you a follow request.`,
+        profilePic: currentData?.profilePic,
+        createdAt: serverTimestamp(),
+      });
     } catch (error) {
-      Swal.fire('Error', 'No se pudo enviar el reporte.', 'error');
+      console.error("Error sending notification:", error);
     }
+  };
+
+  const handleButtonClick = async () => {
+    if (userData?.isPrivate && !isFollowing) {
+      await sendNotification(userData?.id);
+      Swal.fire({
+        title: 'Friend Request Sent',
+        text: 'The request has been successfully sent!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+    } else {
+      await handleFollowToggle();
+    }
+  };
+
+  const goToEdit = () => {
+    navigate("/editprofile");
   };
 
   return (
@@ -160,33 +203,46 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
             </div>
 
             <div className="my-button-container">
-              <div className="my-button button-visibility" onClick={handleTogglePrivacy}>
+              <div
+                className="my-button button-visibility"
+                style={{ cursor: isMyProfile ? 'pointer' : 'default' }}
+                onClick={handleTogglePrivacy}
+              >
                 {userData?.isPrivate ? 'Private 🔒' : 'Public 🌍'}
               </div>
 
-              <div className="my-button button-followers" onClick={() => {
-                setShowFollowers(true);
-                setShowFollowing(false);
-                setShowSuggestions(false);
-              }}>
-                👥 Seguidores
+              <div
+                className="my-button button-followers"
+                onClick={() => {
+                  setShowFollowers(true);
+                  setShowFollowing(false);
+                  setShowSuggestions(false);
+                }}
+              >
+                <span>👥 Seguidores</span>
               </div>
 
-              <div className="my-button button-following" onClick={() => {
-                setShowFollowers(false);
-                setShowFollowing(true);
-                setShowSuggestions(false);
-              }}>
-                📌 Siguiendo
+              <div
+                className="my-button button-following"
+                onClick={() => {
+                  setShowFollowers(false);
+                  setShowFollowing(true);
+                  setShowSuggestions(false);
+                }}
+              >
+                <span>📌 Siguiendo</span>
               </div>
 
               {isMyProfile && (
-                <div className="my-button button-suggestions" onClick={() => {
-                  setShowFollowers(false);
-                  setShowFollowing(false);
-                  setShowSuggestions(true);
-                }}>
-                  🤝 Amigos Sugeridos
+                <div
+                  className="my-button button-suggestions"
+                  onClick={() => {
+                    setShowFollowers(false);
+                    setShowFollowing(false);
+                    setShowSuggestions(true);
+                  }}
+                >
+                  <span>🤝 Amigos Sugeridos</span>
                 </div>
               )}
             </div>
@@ -195,7 +251,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
               <>
                 <button
                   className={`follow-btn ${buttonClass}`}
-                  onClick={handleFollowToggle}
+                  onClick={handleButtonClick}
                   onMouseEnter={() => isFollowing && setButtonLabel('!Codders')}
                   onMouseLeave={() => isFollowing && setButtonLabel('Codders')}
                 >
@@ -205,7 +261,6 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                 <button
                   className="report-btn"
                   style={{ marginTop: '0.5rem', backgroundColor: '#ff4d4d', color: 'white', borderRadius: '8px', padding: '5px 10px' }}
-                  onClick={handleReportUser}
                 >
                   🚨 Reportar Usuario
                 </button>

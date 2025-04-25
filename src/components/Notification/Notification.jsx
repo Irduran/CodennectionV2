@@ -6,7 +6,6 @@ import {
   query, 
   where, 
   onSnapshot,
-  orderBy,
   limit,
   updateDoc,
   doc,
@@ -34,9 +33,9 @@ export const Notification = () => {
     const q = query(
       notificationsRef,
       where("recipientId", "==", currentUser.uid),
-      orderBy("createdAt", "desc"),
       limit(50)
     );
+
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allNotifications = [];
@@ -50,7 +49,6 @@ export const Notification = () => {
         });
         if (!data.read) unread++;
       });
-
       setNotifications(allNotifications);
       setUnreadCount(unread);
     });
@@ -101,7 +99,7 @@ export const Notification = () => {
       setUnreadCount(0);
     }
   };
-
+  
   return (
     <div className="notification-container">
       <div 
@@ -137,7 +135,7 @@ export const Notification = () => {
                 >
                   <div className="notification-content">
                     <img
-                      src={notification.profilePic || "https://via.placeholder.com/40"}
+                      src={notification.profilePic}
                       alt="User Profile"
                       className="notification-user-pic"
                     />
@@ -147,11 +145,11 @@ export const Notification = () => {
                     </small>
                   </div>
                   
-                  {notification.type === "follow-request" ? (
+                  {notification.type === "follow_request" ? (
                     <div className="notification-actions">
                       <button 
                         className="button-notif" 
-                        onClick={() => handleAcceptRequest(notification.id, notification.from)}
+                        onClick={() => handleAcceptRequest(notification.id, notification.senderId)}
                       >
                         Accept
                       </button>
