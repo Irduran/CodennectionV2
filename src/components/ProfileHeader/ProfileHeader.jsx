@@ -140,8 +140,8 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     try {
       const q = query(
         collection(db, 'notifications'),
-        where('to', '==', recipientId),
-        where('from', '==', currentUserId),
+        where('recipientId', '==', recipientId),
+        where('senderId', '==', currentUserId),
         where('type', '==', 'follow_request')
       );
   
@@ -152,11 +152,12 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
       }
   
       await addDoc(collection(db, 'notifications'), {
-        to: recipientId,
-        from: currentUserId,
+        recipientId: recipientId,
+        senderId: currentUserId,
         type: 'follow_request',
         message: `${currentData?.nombre} sent you a follow request.`,
         profilePic: currentData?.profilePic,
+        read: false,
         createdAt: serverTimestamp(),
       });
   
