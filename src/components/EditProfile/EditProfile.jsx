@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./EditProfile.css";
@@ -95,6 +95,10 @@ function EditProfile() {
         if (!imageUrl && profilePic) return; // Si falla la subida y hay imagen nueva, no continuar
       }
 
+      const userRef = doc(db, "users", userAuth.uid);
+      const userSnap = await getDoc(userRef);
+      const latestData = userSnap.exists() ? userSnap.data() : {};
+      
       const userData = {
         uid: userAuth.uid,
         email: userAuth.email,
@@ -103,9 +107,10 @@ function EditProfile() {
         bio: bio,
         programmingLanguages: programmingLanguages,
         isPrivate: isPrivate,
-        followers: followers,
-        following: following
+        followers: latestData.followers || [],
+        following: latestData.following || []
       };
+      
 
       // Guardar datos en Firebase
       await setDoc(doc(db, "users", userAuth.uid), userData);
@@ -114,7 +119,8 @@ function EditProfile() {
       sessionStorage.setItem("userData", JSON.stringify(userData));
 
       // Redirigir al perfil
-      navigate("/profile");
+      sessionStorage.setItem("userData", JSON.stringify(userData));
+      window.location.href = "/profile";
     } catch (error) {
       console.error("Error al guardar el usuario:", error);
       Swal.fire({

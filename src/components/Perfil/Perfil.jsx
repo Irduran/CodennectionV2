@@ -17,25 +17,41 @@ const Perfil = () => {
 
   useEffect(() => {
     const storedData = sessionStorage.getItem("userData");
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+  
     if (storedData) {
       const parsedData = JSON.parse(storedData);
       fetchUserData(parsedData.uid);
       getUserPosts(parsedData.uid);
-    }
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (currentUser) {
+      setCurrentUserId(parsedData.uid);
+    } else if (currentUser) {
+      fetchUserData(currentUser.uid);
+      getUserPosts(currentUser.uid);
       setCurrentUserId(currentUser.uid);
     }
   }, []);
 
+
+
+  
+  
   const fetchUserData = async (uid) => {
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      setUserData({ ...userSnap.data(), id: uid });
+    if (!uid) return;
+  
+    try {
+      const userRef = doc(db, 'users', uid);
+      const userSnap = await getDoc(userRef);
+  
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        setUserData({ ...data, id: uid }); 
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
     }
   };
+  
 
   const getUserPosts = async (uid) => {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
@@ -76,11 +92,11 @@ const Perfil = () => {
         cancelButton: 'swal2-cancel cute-btn',
       }
     });
-  
+
     if (result.isConfirmed) {
       await deleteDoc(doc(db, "posts", postId));
       getUserPosts(userData.id);
-  
+
       Swal.fire({
         title: 'Deleted!',
         text: 'Your post has been deleted.😉',
@@ -104,14 +120,14 @@ const Perfil = () => {
           <ProfileHeader
             userData={userData}
             currentUserId={currentUserId}
-            refreshUser={() => fetchUserData(userData.id)}
-            isMyProfile={userData.id === currentUserId} // Pasa la verificación aquí
+            refreshUser={() => fetchUserData(currentUserId)}
+            isMyProfile={userData.id === currentUserId}
           />
         )}
 
         <div className="user-posts-section">
           {userPosts.length === 0 ? (
-            <p style={{ textAlign: "center", marginTop: "2rem", color:"#fff" }}>Nothing Here Yet...</p>
+            <p style={{ textAlign: "center", marginTop: "2rem", color: "#fff" }}>Nothing Here Yet...</p>
           ) : (
             userPosts.map((post) => (
               <PostUser
@@ -124,7 +140,7 @@ const Perfil = () => {
                 text={editingPostId === post.id ? editedText : post.text}
                 media={post.media}
                 quacks={post.quacks}
-                sharedBy ={post.sharedBy}
+                sharedBy={post.sharedBy}
                 comments={post.comments}
                 isEditing={editingPostId === post.id}
                 {...(post.userId === currentUserId && {
@@ -143,4 +159,3 @@ const Perfil = () => {
 };
 
 export default Perfil;
-

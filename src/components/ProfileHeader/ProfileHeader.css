@@ -147,3 +147,59 @@
   background-color: #bd2222;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #1e1e2f;
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  z-index: 1000;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+.close-modal-btn {
+  margin-top: 1rem;
+  background-color: #b0619e;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.my-button-container {
+  display: flex;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.my-button {
+  background-color: #5b366e;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 15px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.my-button:hover {
+  background-color: #7e4b95;
+}
+
+
+
