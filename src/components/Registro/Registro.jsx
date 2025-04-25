@@ -80,6 +80,7 @@ function Registro() {
       }
 
       const userData = {
+        uid: userAuth.uid,
         email: userAuth.email,
         nombre: username,
         profilePic: imageUrl || null,

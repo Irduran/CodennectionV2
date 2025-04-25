@@ -81,17 +81,22 @@ function AdminPanel() {
 
     setPostReports(allReports);
   };
+  const getTotalUserReportCount = (uid) => {
+    const mainReports = userReports.filter((r) => r.reportedUserId === uid).length;
+    const subcollectionReports = userSubReports.filter((r) => r.userId === uid).length;
+    return mainReports + subcollectionReports;
+  };
 
   const fetchReportedUsersSubcollection = async () => {
-    const snapshot = await getDocs(collection(db, "usersReported"));
+    const usersSnapshot = await getDocs(collection(db, "users"));
     const allReports = [];
-
-    for (const userDoc of snapshot.docs) {
+  
+    for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
       const userData = userDoc.data();
-      const reportsRef = collection(db, "usersReported", userId, "reports");
+      const reportsRef = collection(db, "users", userId, "reports");
       const reportsSnapshot = await getDocs(reportsRef);
-
+  
       reportsSnapshot.forEach((reportDoc) => {
         allReports.push({
           id: reportDoc.id,
@@ -101,32 +106,33 @@ function AdminPanel() {
         });
       });
     }
-
+  
     setUserSubReports(allReports);
   };
+  
 
   // ─────────────────────────────────────────────────────────────
   // ⚙️ HANDLERS
 
   const handleSuspendUser = async (userId) => {
     const confirm = await Swal.fire({
-      title: "¿Suspender cuenta?",
-      text: "El usuario no podrá volver a iniciar sesión.",
+      title: "Do you want to suspend this account?",
+      text: "The user will not be able to log in.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Sí, suspender",
+      confirmButtonText: "Yes, suspend",
     });
 
     if (confirm.isConfirmed) {
       await updateDoc(doc(db, "users", userId), { isSuspended: true });
-      Swal.fire("Usuario suspendido", "", "success");
+      Swal.fire("User suspended", "", "success");
       fetchUsers();
     }
   };
 
   const handleReactivateUser = async (userId) => {
     await updateDoc(doc(db, "users", userId), { isSuspended: false });
-    Swal.fire("Usuario reactivado", "", "success");
+    Swal.fire("User reactivated", "", "success");
     fetchUsers();
   };
 
@@ -135,11 +141,14 @@ function AdminPanel() {
     fetchPosts();
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // 🔎 HELPERS
+  
 
-  const getUserReportCount = (uid) =>
-    userReports.filter((r) => r.reportedUserId === uid).length;
+  const getUserReportCount = (uid) => {
+    const fromMainCollection = userReports.filter((r) => r.reportedUserId === uid).length;
+    const fromSubcollection = userSubReports.filter((r) => r.userId === uid).length;
+    return fromMainCollection + fromSubcollection;
+  };
+  
 
   const getPostReportCount = (postId) =>
     postReports.filter((r) => r.postId === postId).length;
@@ -189,16 +198,17 @@ function AdminPanel() {
               {users
                 .filter(
                   (user) =>
+                    (!showOnlyReportedPosts || getUserReportCount(user.id) > 0) &&
                     user.email?.toLowerCase().includes(userSearch) ||
                     user.nombre?.toLowerCase().includes(userSearch)
                 )
                 .map((user) => (
                   <div key={user.id} className="user-card">
-                    {getUserReportCount(user.id) > 0 && (
-                      <div className="warning-icon">
-                        ⚠️ {getUserReportCount(user.id)}
-                      </div>
-                    )}
+                    {getTotalUserReportCount(user.id) > 0 && (
+                    <div className="warning-icon">
+                      ⚠️ {getTotalUserReportCount(user.id)}
+                    </div>
+                  )}
                     <div className="user-avatar">
                       {user.profilePic ? (
                         <img src={user.profilePic} alt="Avatar" />
@@ -325,8 +335,43 @@ function AdminPanel() {
                     🗑 Delete Report
                   </button>
                 </div>
+                
               ))}
             </div>
+            <h3 className="section-title">Reported Users</h3>
+              <div className="card-grid">
+                {userSubReports.map((report) => (
+                  <div key={report.id} className="user-card">
+                    <div className="warning-icon">⚠️</div>
+                    <div className="user-avatar">
+                      {report.userData?.profilePic ? (
+                        <img src={report.userData.profilePic} alt="Avatar" />
+                      ) : (
+                        <div className="default-avatar">👤</div>
+                      )}
+                    </div>
+                    <div className="user-info">
+                      <p className="user-email">{report.userData?.email || "Unknown"}</p>
+                    </div>
+                    <p className="post-text">
+                      <strong>Reason:</strong> {report.reason}
+                    </p>
+                    <p className="post-text">
+                      <strong>Reported by:</strong> {report.reportedBy}
+                    </p>
+                    <p className="post-text">
+                      <strong>Date:</strong>{" "}
+                      {report.reportedAt?.toDate?.().toLocaleString() || "Unknown"}
+                    </p>
+                    <button
+                      className="suspend-btn"
+                      onClick={() => handleSuspendUser(report.userId)}
+                    >
+                      🚫 Suspend
+                    </button>
+                  </div>
+                ))}
+              </div>
           </>
         )}
       </main>

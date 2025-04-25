@@ -181,10 +181,10 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   };
   const handleReportUser = async () => {
     const { value: reason } = await Swal.fire({
-      title: 'Reportar usuario',
+      title: 'Report user',
       input: 'text',
-      inputLabel: '¿Por qué quieres reportar este perfil?',
-      inputPlaceholder: 'Escribe la razón...',
+      inputLabel: 'Why do you want to report this user?',
+      inputPlaceholder: 'Reason...',
       showCancelButton: true,
     });
   
@@ -198,10 +198,10 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
         reportedAt: serverTimestamp(),
       });
   
-      Swal.fire('¡Reporte enviado!', 'Gracias por ayudarnos a mejorar la comunidad.', 'success');
+      Swal.fire('¡Report sent!', 'Thanks for your cooperation.', 'success');
     } catch (error) {
-      console.error('Error al reportar usuario:', error);
-      Swal.fire('Error', 'No se pudo enviar el reporte.', 'error');
+      console.error('Error to report user:', error);
+      Swal.fire('Error', 'Unable to send report.', 'error');
     }
   };
 
@@ -260,7 +260,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                 style={{ marginTop: '0.5rem', backgroundColor: '#ff4d4d', color: 'white', borderRadius: '8px', padding: '5px 10px' }}
                 onClick={handleReportUser}
               >
-                🚨 Reportar Usuario
+                🚨 Report User
               </button>
             )}
           </div>
