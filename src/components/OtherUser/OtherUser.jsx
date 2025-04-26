@@ -16,6 +16,26 @@ const OtherUser = () => {
   const [editedText, setEditedText] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
   const { userId } = useParams();
+  const [hasBlocked, setHasBlocked] = useState(false);
+
+useEffect(() => {
+  const checkIfBlocked = async () => {
+    if (!currentUserId || !userId) return;
+
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const currentUserSnap = await getDoc(currentUserRef);
+    const currentUserData = currentUserSnap.data();
+
+    if (currentUserData?.blockedUsers?.includes(userId)) {
+      setHasBlocked(true);
+    } else {
+      setHasBlocked(false);
+    }
+  };
+
+  checkIfBlocked();
+}, [currentUserId, userId]);
+
 
   // Listen for Auth changes
   useEffect(() => {
@@ -104,45 +124,54 @@ const OtherUser = () => {
               />
             )}
   
-            {/* Posts or Private notice */}
-            {(!userData?.isPrivate || userData?.followers?.includes(currentUserId)) ? (
-              <div className="user-posts-section">
-                {userPosts.length === 0 ? (
-                  <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
-                    Este usuario aún no ha publicado nada.
-                  </p>
-                ) : (
-                  userPosts.map((post) => (
-                    <PostUser
-                      key={post.id}
-                      id={post.id}
-                      username={post.username}
-                      profilePic={post.profilePic}
-                      time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
-                      text={editingPostId === post.id ? editedText : post.text}
-                      media={post.media}
-                      quacks={post.quacks}
-                      sharedBy={post.sharedBy}
-                      comments={post.comments}
-                      isEditing={editingPostId === post.id}
-                      onEdit={() => handleEdit(post.id, post.text)}
-                      onSave={() => handleSave(post.id)}
-                      onDelete={() => handleDelete(post.id)}
-                      onChangeEdit={handleChangeEdit}
-                    />
-                  ))
-                )}
-              </div>
-            ) : (
+            {/* Blocked check */}
+            {userData?.blockedUsers?.includes(currentUserId) || hasBlocked ? (
               <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
-                📛 Este perfil es privado.
+                ❌ User Blocked.
               </p>
+            ) : (
+              <>
+                {/* Posts or Private notice */}
+                {(!userData?.isPrivate || userData?.followers?.includes(currentUserId)) ? (
+                  <div className="user-posts-section">
+                    {userPosts.length === 0 ? (
+                      <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
+                        This user hasn't posted anything yet.
+                      </p>
+                    ) : (
+                      userPosts.map((post) => (
+                        <PostUser
+                          key={post.id}
+                          id={post.id}
+                          username={post.username}
+                          profilePic={post.profilePic}
+                          time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
+                          text={editingPostId === post.id ? editedText : post.text}
+                          media={post.media}
+                          quacks={post.quacks}
+                          sharedBy={post.sharedBy}
+                          comments={post.comments}
+                          isEditing={editingPostId === post.id}
+                          onEdit={() => handleEdit(post.id, post.text)}
+                          onSave={() => handleSave(post.id)}
+                          onDelete={() => handleDelete(post.id)}
+                          onChangeEdit={handleChangeEdit}
+                        />
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <p style={{ textAlign: 'center', marginTop: '2rem', color: 'white' }}>
+                    📛 This profile is private.
+                  </p>
+                )}
+              </>
             )}
           </>
         )}
       </div>
     </>
-  );  
-};
+  );   
+};  
 
 export default OtherUser;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import edit from '../../assets/pencil-svgrepo-com.svg';
 import './ProfileHeader.css';
 import {
@@ -20,6 +20,9 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
   const [showFollowing, setShowFollowing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [currentData, setCurrentData] = useState(null);
+  const [showOptions, setShowOptions] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const optionsRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -28,6 +31,13 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
       setIsMyProfile(userData.id === currentUserId);
     }
   }, [userData, currentUserId]);
+
+  useEffect(() => {
+    if (currentData && userData?.id) {
+      setIsBlocked(currentData.blockedUsers?.includes(userData.id));
+    }
+  }, [currentData, userData]);
+  
 
   useEffect(() => {
     const checkFollowingStatus = async () => {
@@ -73,6 +83,20 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
       setButtonClass('default');
     }
   }, [isFollowing, userData, isMyProfile, currentUserId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (optionsRef.current && !optionsRef.current.contains(event.target)) {
+        setShowOptions(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
 
   const handleFollowToggle = async () => {
     if (!userData?.id || !currentUserId) return;
@@ -168,6 +192,50 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     navigate("/editprofile");
   };
 
+  const handleBlockUser = async () => {
+    if (!currentUserId || !userData?.id) return;
+  
+    const userRef = doc(db, 'users', currentUserId);
+    const docSnap = await getDoc(userRef);
+    const currentUser = docSnap.data();
+  
+    const isBlocked = currentUser?.blockedUsers?.includes(userData.id);
+  
+    try {
+      await updateDoc(userRef, {
+        blockedUsers: isBlocked
+          ? arrayRemove(userData.id)  // Unblock
+          : arrayUnion(userData.id), // Block
+      });
+  
+      Swal.fire({
+        title: isBlocked ? 'User Unblocked' : 'User Blocked',
+        text: isBlocked
+          ? 'This user has been unblocked.'
+          : 'This user has been successfully blocked.',
+        icon: 'success',
+        confirmButtonText: 'OK',
+      }).then(() => {
+        // Force reload to update view
+        window.location.reload();
+      });
+    } catch (error) {
+      console.error("Error toggling block status:", error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Could not change the block status.',
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+    }
+  };
+  
+  
+   
+  const toggleOptions = () => {
+    setShowOptions((prev) => !prev);
+  };
+
   return (
     <>
       <div className="my-profile-container">
@@ -186,9 +254,34 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
           )}
 
           <div className="my-text-info">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <span className="my-info-name">
               {userData?.nombre || userData?.email || 'Mi Nombre'}
             </span>
+
+            <div style={{ position: 'relative' }}>
+            {!isMyProfile && (
+              <div className="header-options" onClick={toggleOptions}>⋯</div>
+          )}
+
+
+              {showOptions && (
+                <div className="header-menu" ref={optionsRef}>
+                  {!isMyProfile && currentUserId && (
+                    <>
+                      <button className="report-btn">🚨 Report User</button>
+                      <button className="block-btn" onClick={handleBlockUser}>
+                        {isBlocked ? '✅ Unblock user' : '🚫 Block user'}
+                      </button>
+
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
+
             <span className="my-info-bio">
               {userData?.bio || '¡Esta es mi biografía!'}
             </span>
@@ -257,15 +350,9 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                 >
                   {buttonLabel}
                 </button>
-
-                <button
-                  className="report-btn"
-                  style={{ marginTop: '0.5rem', backgroundColor: '#ff4d4d', color: 'white', borderRadius: '8px', padding: '5px 10px' }}
-                >
-                  🚨 Reportar Usuario
-                </button>
               </>
             )}
+
           </div>
         </div>
       </div>

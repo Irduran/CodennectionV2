@@ -1,6 +1,6 @@
 .my-profile-container {
   width: 1000px;
-  height: 400px;
+  height: 450px;
   color: white;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
@@ -127,6 +127,7 @@
   margin-left: 1rem;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-top: 30px;
 }
 
 .follow-btn.default {
@@ -200,6 +201,50 @@
 .my-button:hover {
   background-color: #7e4b95;
 }
+
+.header-options {
+  cursor: pointer;
+  font-size: 24px;
+  user-select: none;
+  padding: 5px;
+}
+
+.header-menu {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: black;
+  border-radius: 8px;
+  padding: 10px;
+  top: 30px;
+  right: 0;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-btn,
+.block-btn {   
+  font-size: 14px;      
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 120px;           
+  text-align: center;  
+}
+
+.report-btn {
+  background-color: #ff4d4d;
+  color: white;
+}
+
+.block-btn {
+  background-color: #555;
+  color: white;
+}
+
+
 
 
 
