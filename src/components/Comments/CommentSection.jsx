@@ -12,11 +12,13 @@ import {
 import { db } from "../../firebase";
 import "./CommentSection.css";
 import { sendNotification } from "../../services/notificationService";
+import Swal from "sweetalert2";
 
 const CommentSection = ({ postId }) => {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
   const currentUser = JSON.parse(sessionStorage.getItem("userData"));
+  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo","zorro","zorra" ];
 
   useEffect(() => {
     const commentsRef = collection(db, "posts", postId, "comments");
@@ -33,9 +35,16 @@ const CommentSection = ({ postId }) => {
     return () => unsubscribe();
   }, [postId]);
 
-
+  const contienePalabrasProhibidas = (texto) => {
+    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita acentos
+    return badWords.some((palabra) => textoNormalizado.includes(palabra));
+  };
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
+    if (contienePalabrasProhibidas(comment)) {
+      Swal.fire("Oops", "Your post contains inappropriate content 🛑", "error");
+      return;
+    }
     if (!comment.trim()) return;
   
     const commentData = {

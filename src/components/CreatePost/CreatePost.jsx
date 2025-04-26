@@ -11,6 +11,7 @@ const CreatePost = ({ onPostCreated }) => {
 
   const userData = JSON.parse(sessionStorage.getItem("userData"));
   const username = userData?.nombre || "User";
+  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo" ];
 
   const handleMediaUpload = async (files) => {
     setIsUploading(true);
@@ -53,6 +54,10 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   const handlePost = async () => {
+    if (contienePalabrasProhibidas(text)) {
+      Swal.fire("Oops", "Your post contains inappropriate content 🛑", "error");
+      return;
+    }    
     if (!text.trim() && media.length === 0) {
       Swal.fire("Oops", "Write something or upload a file!! 😉", "warning");
       return;
@@ -82,6 +87,11 @@ const CreatePost = ({ onPostCreated }) => {
 
   const handleRemoveFile = (indexToRemove) => {
     setMedia((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+  
+  const contienePalabrasProhibidas = (texto) => {
+    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
+    return badWords.some((palabra) => textoNormalizado.includes(palabra));
   };
 
   return (

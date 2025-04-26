@@ -36,6 +36,7 @@ function EditProfile() {
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [isDeactivated, setIsDeactivated] = useState([]);
+  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo","zorro","zorra" ];
 
   useEffect(() => {
     const userData = sessionStorage.getItem("userData");
@@ -92,7 +93,11 @@ function EditProfile() {
       setIsUploading(false);
     }
   };
-
+  const contienePalabrasProhibidas = (texto) => {
+    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita acentos
+    return badWords.some((palabra) => textoNormalizado.includes(palabra));
+  };
+  
   const handlePasswordChangeClick = async () => {
     const { value: formValues } = await Swal.fire({
       title: "Cambiar Contraseña",
@@ -174,6 +179,14 @@ function EditProfile() {
       });
       return;
     }
+    if (
+      contienePalabrasProhibidas(username) ||
+      contienePalabrasProhibidas(bio)
+        ) {
+          Swal.fire("Nope 🚫", "Username or Bio or programmingLanguages contains inappropriate words | NO BAD WORDS!!!", "error");
+          return;
+        }
+        
 
     try {
       const userAuth = auth.currentUser;
