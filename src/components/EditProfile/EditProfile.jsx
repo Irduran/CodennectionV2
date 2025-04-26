@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where, getDoc 
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+  getDoc
 } from "firebase/firestore";
-import { deleteUser } from "firebase/auth";
+import {
+  deleteUser,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
+} from "firebase/auth";
 import { auth, db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./EditProfile.css";
+
 
 
 function EditProfile() {
@@ -36,8 +50,8 @@ function EditProfile() {
       setProgrammingLanguages(parsedUser.programmingLanguages || []);
       setIsPrivate(parsedUser.isPrivate || false);
       setIsDeactivated(parsedUser.isDeactivated || false);
-      setFollowers(parsedUser.followers || [])
-      setFollowing(parsedUser.following || [])
+      setFollowers(parsedUser.followers || []);
+      setFollowing(parsedUser.following || []);
     } else {
       navigate("/");
     }
@@ -46,7 +60,7 @@ function EditProfile() {
   const uploadImageToCloudinary = async (file) => {
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -63,7 +77,7 @@ function EditProfile() {
       );
 
       if (!response.ok) {
-        throw new Error("Error al subir la imagen");
+        throw new Error("Something went wrong with the upload.");
       }
 
       const data = await response.json();
@@ -73,11 +87,83 @@ function EditProfile() {
       Swal.fire({
         icon: "error",
         title: "Upload Error",
-        text: "No se pudo subir la imagen. Inténtalo de nuevo.",
+        text: "Try again later.",
       });
       return null;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handlePasswordChangeClick = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: "Cambiar Contraseña",
+      html:
+        '<input id="current-password" type="password" placeholder="Current Password" class="swal2-input">' +
+        '<input id="new-password" type="password" placeholder="New Password" class="swal2-input">' +
+        '<input id="confirm-password" type="password" placeholder="Confirm New Password" class="swal2-input">',
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Update✨",
+      cancelButtonText: "Cancel❌",
+      preConfirm: () => {
+        return {
+          currentPassword: document.getElementById("current-password").value,
+          newPassword: document.getElementById("new-password").value,
+          confirmPassword: document.getElementById("confirm-password").value,
+        };
+      },
+      validationMessage: "Please fill in all fields",
+      customClass: {
+        validationMessage: "my-validation-message",
+      },
+    });
+
+    if (formValues) {
+      try {
+        if (formValues.newPassword !== formValues.confirmPassword) {
+          throw new Error("The new passwords do not match");
+        }
+
+        if (formValues.newPassword.length < 6) {
+          throw new Error("The new password must be at least 6 characters long");
+        }
+
+        const user = auth.currentUser;
+
+        // Reautenticación
+        const credential = EmailAuthProvider.credential(
+          user.email,
+          formValues.currentPassword
+        );
+        await reauthenticateWithCredential(user, credential);
+
+        await updatePassword(user, formValues.newPassword);
+
+        await updateDoc(doc(db, "users", user.uid), {
+          lastPasswordUpdate: new Date().toISOString(),
+        });
+
+        Swal.fire({
+          icon: "success",
+          title: "Password Changed",
+          text: "Your password has been changed successfully.",
+        });
+      } catch (error) {
+        let errorMessage = "Error updating password. Please try again.";
+
+        if (error.code === "auth/wrong-password") {
+          errorMessage = "The current password is incorrect.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: errorMessage,
+        });
+      }
     }
   };
 
@@ -104,7 +190,7 @@ function EditProfile() {
       const userRef = doc(db, "users", userAuth.uid);
       const userSnap = await getDoc(userRef);
       const latestData = userSnap.exists() ? userSnap.data() : {};
-      
+
       const userData = {
         uid: userAuth.uid,
         email: userAuth.email,
@@ -117,8 +203,6 @@ function EditProfile() {
         followers: latestData.followers || [],
         following: latestData.following || [],
       };
-      
-      
 
       // Guardar datos en Firebase
       await setDoc(doc(db, "users", userAuth.uid), userData);
@@ -130,11 +214,11 @@ function EditProfile() {
       sessionStorage.setItem("userData", JSON.stringify(userData));
       window.location.href = "/profile";
     } catch (error) {
-      console.error("Error al guardar el usuario:", error);
+      console.error("Error saving the user:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Hubo un problema al guardar los datos. Inténtalo de nuevo.",
+        text: "Something happens. Try again later.",
       });
     }
   };
@@ -147,7 +231,9 @@ function EditProfile() {
   };
 
   const handleRemoveLanguage = (indexToRemove) => {
-    setProgrammingLanguages(programmingLanguages.filter((_, index) => index !== indexToRemove));
+    setProgrammingLanguages(
+      programmingLanguages.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   const handleFileChange = (file) => {
@@ -167,35 +253,38 @@ function EditProfile() {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
     });
-  
+
     if (result.isConfirmed) {
       try {
         const currentUser = auth.currentUser;
-  
+
         await removeFromFollowersAndFollowing(currentUser.uid);
 
         await deleteUserPosts(currentUser.uid);
 
         await deleteUserComments(currentUser.uid);
-        
+
         await removeUserFromQuacks(currentUser.uid);
-  
 
         await deleteDoc(doc(db, "users", currentUser.uid));
-  
+
         await deleteUser(currentUser);
-  
+
         Swal.fire("Deleted!", "Your account has been deleted.", "success");
-  
+
         sessionStorage.clear();
         navigate("/");
       } catch (error) {
         console.error("Error deleting user:", error);
-        Swal.fire("Error", "Could not delete your account. Please re-login and try again.", "error");
+        Swal.fire(
+          "Error",
+          "Could not delete your account. Please re-login and try again.",
+          "error"
+        );
       }
     }
   };
-  
+
   const removeFromFollowersAndFollowing = async (userId) => {
     try {
       const usersRef = collection(db, "users");
@@ -203,22 +292,26 @@ function EditProfile() {
 
       const updatePromises = usersSnapshot.docs.map(async (userDoc) => {
         const userData = userDoc.data();
-  
+
         if (userData.followers && userData.followers.includes(userId)) {
-          const updatedFollowers = userData.followers.filter(followerId => followerId !== userId);
+          const updatedFollowers = userData.followers.filter(
+            (followerId) => followerId !== userId
+          );
           await updateDoc(doc(db, "users", userDoc.id), {
             followers: updatedFollowers,
           });
         }
-  
+
         if (userData.following && userData.following.includes(userId)) {
-          const updatedFollowing = userData.following.filter(followingId => followingId !== userId);
+          const updatedFollowing = userData.following.filter(
+            (followingId) => followingId !== userId
+          );
           await updateDoc(doc(db, "users", userDoc.id), {
             following: updatedFollowing,
           });
         }
       });
-  
+
       await Promise.all(updatePromises);
       console.log("User removed from all followers and following lists.");
     } catch (error) {
@@ -226,47 +319,45 @@ function EditProfile() {
       throw error;
     }
   };
-  
+
   const deleteUserPosts = async (userId) => {
     try {
       const postsRef = collection(db, "posts");
       const userPostsQuery = query(postsRef, where("uid", "==", userId));
       const querySnapshot = await getDocs(userPostsQuery);
-  
+
       const deletePromises = querySnapshot.docs.map((doc) =>
         deleteDoc(doc.ref)
       );
-  
+
       await Promise.all(deletePromises);
       console.log("All user posts deleted.");
     } catch (error) {
       console.error("Error deleting user posts:", error);
       throw error;
     }
-  };  
+  };
 
   const deleteUserComments = async (userId) => {
     try {
-
       const postsRef = collection(db, "posts");
       const snapshot = await getDocs(postsRef);
 
       const deletePromises = snapshot.docs.map(async (postDoc) => {
         const commentsRef = collection(postDoc.ref, "comments");
         const commentsSnapshot = await getDocs(commentsRef);
-  
 
-        const deleteCommentPromises = commentsSnapshot.docs.map(commentDoc => {
-          const commentData = commentDoc.data();
-          if (commentData.commentedUid === userId) {
-            return deleteDoc(commentDoc.ref); 
+        const deleteCommentPromises = commentsSnapshot.docs.map(
+          (commentDoc) => {
+            const commentData = commentDoc.data();
+            if (commentData.commentedUid === userId) {
+              return deleteDoc(commentDoc.ref);
+            }
           }
-        });
-  
+        );
 
         await Promise.all(deleteCommentPromises);
       });
-  
 
       await Promise.all(deletePromises);
       console.log("User comments deleted.");
@@ -275,27 +366,28 @@ function EditProfile() {
       throw error;
     }
   };
-  
-  
+
   const removeUserFromQuacks = async (userId) => {
     try {
       const postsRef = collection(db, "posts");
       const snapshot = await getDocs(postsRef);
-  
+
       const updatePromises = snapshot.docs.map(async (postDoc) => {
         const postData = postDoc.data();
-  
+
         if (postData.quackedBy?.includes(userId)) {
-          const updatedQuackedBy = postData.quackedBy.filter(id => id !== userId);
+          const updatedQuackedBy = postData.quackedBy.filter(
+            (id) => id !== userId
+          );
           const updatedQuacks = updatedQuackedBy.length;
-  
+
           await updateDoc(postDoc.ref, {
             quackedBy: updatedQuackedBy,
-            quacks: updatedQuacks
+            quacks: updatedQuacks,
           });
         }
       });
-  
+
       await Promise.all(updatePromises);
       console.log("User removed from all quacks.");
     } catch (error) {
@@ -303,7 +395,6 @@ function EditProfile() {
       throw error;
     }
   };
-  
 
   return (
     <>
@@ -372,8 +463,8 @@ function EditProfile() {
                 {programmingLanguages.map((lang, index) => (
                   <li key={index}>
                     {lang}
-                    <span 
-                      className="remove-language" 
+                    <span
+                      className="remove-language"
                       onClick={() => handleRemoveLanguage(index)}
                     >
                       ✖
@@ -381,10 +472,7 @@ function EditProfile() {
                   </li>
                 ))}
               </ul>
-              <button 
-                onClick={handleDeleteAccount} 
-                className="delete-button"
-              >
+              <button onClick={handleDeleteAccount} className="delete-button">
                 🗑️ Delete Account
               </button>
             </div>
@@ -447,10 +535,15 @@ function EditProfile() {
               </div>
             </div>
           </div>
+          <button
+            onClick={handlePasswordChangeClick}
+            className="change-password-button"
+          >
+            🔒Change password
+          </button>
           <button onClick={handleEditProfile} disabled={isUploading}>
             {isUploading ? "Saving..." : "⭐Save⭐"}
           </button>
-
         </div>
       </div>
     </>

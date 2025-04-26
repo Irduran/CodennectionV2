@@ -118,7 +118,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
       });
       if (refreshUser) refreshUser();
     } catch (error) {
-      console.error("Error cambiando privacidad:", error);
+      console.error("Something happens: ", error);
     }
   };
 
@@ -190,15 +190,15 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
               {userData?.nombre || userData?.email || 'Mi Nombre'}
             </span>
             <span className="my-info-bio">
-              {userData?.bio || '¡Esta es mi biografía!'}
+              {userData?.bio || 'My Bio!'}
             </span>
 
             <div className="my-followers-container">
               <span className="my-followers-count">
-                <strong>{userData?.followers?.length || 0}</strong> Seguidores
+                <strong>{userData?.followers?.length || 0}</strong> Codders
               </span>
               <span className="my-following-count">
-                <strong>{userData?.following?.length || 0}</strong> Siguiendo
+                <strong>{userData?.following?.length || 0}</strong> Codderwing
               </span>
             </div>
 
@@ -219,7 +219,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                   setShowSuggestions(false);
                 }}
               >
-                <span>👥 Seguidores</span>
+                <span>👥 Codders</span>
               </div>
 
               <div
@@ -230,7 +230,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                   setShowSuggestions(false);
                 }}
               >
-                <span>📌 Siguiendo</span>
+                <span>📌 Codderwing</span>
               </div>
 
               {isMyProfile && (
@@ -242,7 +242,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                     setShowSuggestions(true);
                   }}
                 >
-                  <span>🤝 Amigos Sugeridos</span>
+                  <span>🤝 Suggested Codders</span>
                 </div>
               )}
             </div>
@@ -262,7 +262,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
                   className="report-btn"
                   style={{ marginTop: '0.5rem', backgroundColor: '#ff4d4d', color: 'white', borderRadius: '8px', padding: '5px 10px' }}
                 >
-                  🚨 Reportar Usuario
+                  🚨 Report Codder
                 </button>
               </>
             )}
@@ -278,7 +278,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
           }} />
 
           <div className="modal-content">
-            <h3>{showFollowers ? '👥 Seguidores' : '📌 Siguiendo'}</h3>
+            <h3>{showFollowers ? '👥 Codders' : '📌 Codderwing'}</h3>
             <FollowersAndFollowing
               type={showFollowers ? 'followers' : 'following'}
               userId={userData?.id}
@@ -289,7 +289,7 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
               setShowFollowers(false);
               setShowFollowing(false);
             }}>
-              ❌ Cerrar
+              ❌ Close
             </button>
           </div>
         </>
@@ -299,10 +299,10 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
         <>
           <div className="modal-overlay" onClick={() => setShowSuggestions(false)} />
           <div className="modal-content">
-            <h3>🤝 Amigos Sugeridos</h3>
+            <h3>🤝 Suggested Codders</h3>
             <SuggestedFriends currentUserId={currentUserId} refreshUser={refreshUser} />
             <button className="close-modal-btn" onClick={() => setShowSuggestions(false)}>
-              ❌ Cerrar
+              ❌ Close
             </button>
           </div>
         </>
