@@ -8,6 +8,7 @@ import { app, db } from "../../firebase";
 import { GoogleAuth } from "../GoogleAuth/GoogleAuth";
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Eye, EyeOff } from "lucide-react"; 
+import emailjs from '@emailjs/browser';
 
 
 const Login = () => {
@@ -24,11 +25,39 @@ const Login = () => {
     return regex.test(password);
   };
 
+  const sendWelcomeEmail = async (userEmail) => {
+    try {
+      if (!userEmail || userEmail.trim() === '') {
+        console.error('El email del destinatario está vacío');
+        return;
+      }
+      const templateParams = {
+        name: userEmail.split('@')[0], 
+        email: userEmail,
+        user_email: userEmail,  
+        from_name: 'Codennection Team',
+        message: 'Welcome to Codennection! We are very happy!.',
+        reply_to: 'codennections@gmail.com',
+        subject: `You're a Codder Now!🎊`,
+      };
+
+    await emailjs.send(
+      "service_vrzdj7m",
+      "template_ylfxj7b",
+      templateParams,
+      'kJ3zeoOpYZReFKMha' 
+    );
+      
+    } catch (error) {
+      console.error('Something happens!', error);
+      Swal.fire("Oops!", "The welcome email could not be sent, but your registration was successful.", "info");
+    }
+  };
+
   const handleAuth = async (e) => {
     e.preventDefault();
     try {
       if (registrando) {
-        // REGISTRO DE USUARIO
         if (!isPasswordStrong(password)) {
           Swal.fire(
             "Weak Password ⚠️",
@@ -44,6 +73,8 @@ const Login = () => {
         // Guardar en Firestore
         const userDoc = doc(db, "users", user.uid);
         await setDoc(userDoc, { email, uid: user.uid });
+
+        await sendWelcomeEmail(email);
 
         const userData = { email, uid: user.uid };
         sessionStorage.setItem("userData", JSON.stringify(userData)); // Guardar en sesión

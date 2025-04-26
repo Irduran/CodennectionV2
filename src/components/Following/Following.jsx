@@ -34,12 +34,12 @@ const Following = () => {
 
   return (
     <div>
-      <h3>Siguiendo</h3>
+      <h3>Codderwing</h3>
       <ul>
         {following.map(followedId => (
           <li key={followedId}>
             {followedId}
-            <button onClick={() => unfollowUser(followedId)}>Dejar de seguir</button>
+            <button onClick={() => unfollowUser(followedId)}>Bye</button>
           </li>
         ))}
       </ul>

@@ -53,7 +53,7 @@ const FollowersAndFollowing = ({ type, userId, currentUserId, refreshUser }) => 
   return (
     <div>
       {users.length === 0 ? (
-        <p>No {type === 'followers' ? 'tenés seguidores' : 'estás siguiendo a nadie'} aún.</p>
+        <p>No {type === 'codders' ? 'coddering' : 'coddenecting'} yet.</p>
       ) : (
         <ul>
           {users.map((u) => (
@@ -72,7 +72,7 @@ const FollowersAndFollowing = ({ type, userId, currentUserId, refreshUser }) => 
                     cursor: 'pointer'
                   }}
                 >
-                  Eliminar
+                  Bye
                 </button>
               )}
             </li>
