@@ -3,6 +3,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./CreatePost.css";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
 
 const CreatePost = ({ onPostCreated }) => {
   const [text, setText] = useState("");
@@ -53,8 +54,13 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   const handlePost = async () => {
+    
     if (!text.trim() && media.length === 0) {
       Swal.fire("Oops", "Write something or upload a file!! 😉", "warning");
+      return;
+    }
+    if (contienePalabrasProhibidas(text)) {
+      Swal.fire("Oops", "Your post contains inappropriate content 🛑", "error");
       return;
     }
 

@@ -4,6 +4,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./Registro.css";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
 
 function Registro() {
   const navigate = useNavigate();
@@ -61,6 +62,13 @@ function Registro() {
   };
 
   const handleRegistro = async () => {
+    if (
+      contienePalabrasProhibidas(username) ||
+      contienePalabrasProhibidas(bio)
+    ) {
+      Swal.fire("Nope 🚫", "Username or Bio contains inappropriate words", "error");
+      return;
+    }
     if (!username.trim() || !bio.trim() || programmingLanguages.length === 0) {
       Swal.fire({
         icon: "error",

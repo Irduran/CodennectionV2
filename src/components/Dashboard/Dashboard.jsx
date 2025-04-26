@@ -17,6 +17,7 @@ import Post from "../Posts/Post";
 import CreatePost from "../CreatePost/CreatePost";
 import "./Dashboard.css";
 import Swal from "sweetalert2";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -110,6 +111,11 @@ const Dashboard = () => {
 
   const handleSave = async (postId) => {
     const postRef = doc(db, "posts", postId);
+    if (contienePalabrasProhibidas(postRef)) {
+      Swal.fire("Oops", "Your post contains inappropriate content 🛑", "error");
+      return;
+    }
+    
     await updateDoc(postRef, { text: editedText });
     setEditingPostId(null);
     setEditedText("");
@@ -136,7 +142,7 @@ const Dashboard = () => {
 
     if (result.isConfirmed) {
       await deleteDoc(doc(db, "posts", postId));
-      getPosts(userData.id);
+      getPosts(userData);
 
       Swal.fire({
         title: "Deleted!",

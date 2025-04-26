@@ -12,6 +12,8 @@ import {
 import { db } from "../../firebase";
 import "./CommentSection.css";
 import { sendNotification } from "../../services/notificationService";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
+import Swal from "sweetalert2";
 
 const CommentSection = ({ postId }) => {
   const [comment, setComment] = useState("");
@@ -36,6 +38,11 @@ const CommentSection = ({ postId }) => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
+    if (contienePalabrasProhibidas(comment)) {
+      Swal.fire("Oops", "Your comment contains inappropriate content 🛑", "error");
+      return;
+    }
+    
     if (!comment.trim()) return;
   
     const commentData = {
