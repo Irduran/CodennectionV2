@@ -81,7 +81,7 @@ const CreatePost = ({ onPostCreated }) => {
       setMedia([]);
       onPostCreated();
     } catch (err) {
-      console.error("Error guardando el post:", err);
+      console.error("Error saving the post:", err);
       Swal.fire("Error", "Something happens 🥺", "error");
     }
   };

@@ -104,8 +104,6 @@ useEffect(() => {
     setEditedText(e.target.value);
   };
 
-  console.log(userData)
-
   return (
     <>
       <TopBar />
