@@ -60,7 +60,7 @@ function EditProfile() {
       );
 
       if (!response.ok) {
-        throw new Error("Error al subir la imagen");
+        throw new Error("Something went wrong with the upload.");
       }
 
       const data = await response.json();
@@ -70,7 +70,7 @@ function EditProfile() {
       Swal.fire({
         icon: "error",
         title: "Upload Error",
-        text: "No se pudo subir la imagen. Inténtalo de nuevo.",
+        text: "Try again later.",
       });
       return null;
     } finally {
@@ -127,11 +127,11 @@ function EditProfile() {
       sessionStorage.setItem("userData", JSON.stringify(userData));
       window.location.href = "/profile";
     } catch (error) {
-      console.error("Error al guardar el usuario:", error);
+      console.error("Error saving the user:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Hubo un problema al guardar los datos. Inténtalo de nuevo.",
+        text: "Something happens. Try again later.",
       });
     }
   };
