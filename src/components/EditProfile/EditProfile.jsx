@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
+
 import {
   collection,
   deleteDoc,
@@ -36,6 +38,7 @@ function EditProfile() {
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [isDeactivated, setIsDeactivated] = useState([]);
+
 
   useEffect(() => {
     const userData = sessionStorage.getItem("userData");
@@ -92,7 +95,7 @@ function EditProfile() {
       setIsUploading(false);
     }
   };
-
+  
   const handlePasswordChangeClick = async () => {
     const { value: formValues } = await Swal.fire({
       title: "Cambiar Contraseña",
@@ -166,6 +169,13 @@ function EditProfile() {
   };
 
   const handleEditProfile = async () => {
+    if (
+      contienePalabrasProhibidas(username) ||
+      contienePalabrasProhibidas(bio)
+    ) {
+      Swal.fire("Nope 🚫", "Username or Bio contains inappropriate words", "error");
+      return;
+    }
     if (!username.trim() || !bio.trim() || programmingLanguages.length === 0) {
       Swal.fire({
         icon: "error",
@@ -174,6 +184,14 @@ function EditProfile() {
       });
       return;
     }
+    if (
+      contienePalabrasProhibidas(username) ||
+      contienePalabrasProhibidas(bio)
+        ) {
+          Swal.fire("Nope 🚫", "Username or Bio or programmingLanguages contains inappropriate words | NO BAD WORDS!!!", "error");
+          return;
+        }
+        
 
     try {
       const userAuth = auth.currentUser;
