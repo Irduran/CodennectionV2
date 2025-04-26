@@ -17,6 +17,7 @@ import Post from "../Posts/Post";
 import CreatePost from "../CreatePost/CreatePost";
 import "./Dashboard.css";
 import Swal from "sweetalert2";
+import { contienePalabrasProhibidas } from "../../utils/moderation";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Dashboard = () => {
     }
 
     const freshUserData = userSnap.data();
+    const blockedUsers = freshUserData.blockedUsers || [];
 
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
@@ -45,8 +47,7 @@ const Dashboard = () => {
     }));
 
     const filteredData = [];
-
-    const userIds = [...new Set(data.map(post => post.userId))];
+    const userIds = [...new Set(data.map((post) => post.userId))];
 
     const userPromises = userIds.map((userId) => {
       const userRef = doc(db, "users", userId);
@@ -58,20 +59,24 @@ const Dashboard = () => {
         }
       });
     });
-    
+
     const userSnapshots = await Promise.all(userPromises);
-    
+
     const usersData = userSnapshots.reduce((acc, { userId, userData }) => {
       if (userData) {
         acc[userId] = userData;
       }
       return acc;
     }, {});
-    
+
     for (const post of data) {
       const postUserData = usersData[post.userId];
-    
-      if (postUserData && !postUserData.isDeactivated) {
+
+      if (
+        postUserData &&
+        !postUserData.isDeactivated &&
+        !blockedUsers.includes(post.userId)
+      ) {
         if (
           freshUserData.following.includes(post.userId) ||
           post.userId === currentUser.uid
@@ -80,10 +85,8 @@ const Dashboard = () => {
         }
       }
     }
-    
+
     setPosts(filteredData);
-    
-    
   };
 
   useEffect(() => {
@@ -108,6 +111,11 @@ const Dashboard = () => {
 
   const handleSave = async (postId) => {
     const postRef = doc(db, "posts", postId);
+    if (contienePalabrasProhibidas(postRef)) {
+      Swal.fire("Oops", "Your post contains inappropriate content 🛑", "error");
+      return;
+    }
+    
     await updateDoc(postRef, { text: editedText });
     setEditingPostId(null);
     setEditedText("");
@@ -120,8 +128,8 @@ const Dashboard = () => {
       text: "You won't be able to recover this post!🥹",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#463961',
-      cancelButtonColor: '#B0619e',
+      confirmButtonColor: "#463961",
+      cancelButtonColor: "#B0619e",
       confirmButtonText: "Yes, delete it!❌",
       cancelButtonText: "Cancel😭",
       backdrop: true,
@@ -134,7 +142,7 @@ const Dashboard = () => {
 
     if (result.isConfirmed) {
       await deleteDoc(doc(db, "posts", postId));
-      getPosts(userData.id);
+      getPosts(userData);
 
       Swal.fire({
         title: "Deleted!",
@@ -184,53 +192,53 @@ const Dashboard = () => {
   };
 
   return (
-<>
-  <TopBar onSearchChange={setSearchTerm} />
-  {userData && <ProfileCard user={userData} />}
-  <div className="dashboard-container">
-    {userData?.isDeactivated ? (
-      <div className="deactivated">
-        <p>Your account is deactivated.</p>
-      </div>
-    ) : (
-      <>
-        <CreatePost onPostCreated={() => getPosts(userData)} />
-
-        {searchTerm.trim() && filteredPosts.length === 0 ? (
-          <p style={{ padding: "1rem", fontStyle: "italic", color: "#888" }}>
-            No se encontraron posts con el término "
-            <strong>{searchTerm}</strong>"
-          </p>
+    <>
+      <TopBar onSearchChange={setSearchTerm} />
+      {userData && <ProfileCard user={userData} />}
+      <div className="dashboard-container">
+        {userData?.isDeactivated ? (
+          <div className="deactivated">
+            <p>Your account is deactivated.</p>
+          </div>
         ) : (
-          filteredPosts.map((post) => (
-            <Post
-              key={post.id}
-              id={post.id}
-              userId={post.userId}
-              username={post.username}
-              profilePic={post.profilePic}
-              time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
-              text={
-                editingPostId === post.id
-                  ? editedText
-                  : highlightText(post.text || "")
-              }
-              media={post.media}
-              quacks={post.quacks}
-              sharedBy={post.sharedBy}
-              comments={post.comments}
-              isEditing={editingPostId === post.id}
-              onEdit={() => handleEdit(post.id, post.text)}
-              onSave={() => handleSave(post.id)}
-              onDelete={() => handleDelete(post.id)}
-              onChangeEdit={handleChangeEdit}
-            />
-          ))
+          <>
+            <CreatePost onPostCreated={() => getPosts(userData)} />
+
+            {searchTerm.trim() && filteredPosts.length === 0 ? (
+              <p style={{ padding: "1rem", fontStyle: "italic", color: "#888" }}>
+                No posts found with the term "
+                <strong>{searchTerm}</strong>"
+              </p>
+            ) : (
+              filteredPosts.map((post) => (
+                <Post
+                  key={post.id}
+                  id={post.id}
+                  userId={post.userId}
+                  username={post.username}
+                  profilePic={post.profilePic}
+                  time={new Date(post.createdAt?.seconds * 1000).toLocaleString()}
+                  text={
+                    editingPostId === post.id
+                      ? editedText
+                      : highlightText(post.text || "")
+                  }
+                  media={post.media}
+                  quacks={post.quacks}
+                  sharedBy={post.sharedBy}
+                  comments={post.comments}
+                  isEditing={editingPostId === post.id}
+                  onEdit={() => handleEdit(post.id, post.text)}
+                  onSave={() => handleSave(post.id)}
+                  onDelete={() => handleDelete(post.id)}
+                  onChangeEdit={handleChangeEdit}
+                />
+              ))
+            )}
+          </>
         )}
-      </>
-    )}
-  </div>
-</>
+      </div>
+    </>
   );
 };
 

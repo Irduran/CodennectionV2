@@ -127,6 +127,8 @@ function AdminPanel() {
       await updateDoc(doc(db, "users", userId), { isSuspended: true });
       Swal.fire("User suspended", "", "success");
       fetchUsers();
+      fetchUserReports(); 
+    fetchReportedUsersSubcollection(); 
     }
   };
 
@@ -139,6 +141,7 @@ function AdminPanel() {
   const handleDeletePost = async (postId) => {
     await deleteDoc(doc(db, "posts", postId));
     fetchPosts();
+    fetchPostReports(); 
   };
 
   
