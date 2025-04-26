@@ -63,12 +63,12 @@ const SuggestedFriends = ({ currentUserId, refreshUser }) => {
   return (
     <div className="suggested-friends-container">
       {suggestedUsers.length === 0 ? (
-        <p>No hay sugerencias por ahora.</p>
+        <p>Add a new language to see some suggestions.</p>
       ) : (
         <ul>
           {suggestedUsers.map((user) => (
             <li key={user.id} style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{user.nombre ?? user.email ?? 'Usuario sin nombre'}</span>
+              <span>{user.nombre ?? user.email ?? 'Codder without name'}</span>
               <button
                 onClick={() => handleFollow(user.id)}
                 style={{
@@ -81,7 +81,7 @@ const SuggestedFriends = ({ currentUserId, refreshUser }) => {
                   marginLeft: '1rem'
                 }}
               >
-                Seguir
+                Coddenecting!
               </button>
             </li>
           ))}
