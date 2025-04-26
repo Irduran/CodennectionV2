@@ -12,7 +12,6 @@ const CreatePost = ({ onPostCreated }) => {
 
   const userData = JSON.parse(sessionStorage.getItem("userData"));
   const username = userData?.nombre || "User";
-  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo" ];
 
   const handleMediaUpload = async (files) => {
     setIsUploading(true);
@@ -91,11 +90,6 @@ const CreatePost = ({ onPostCreated }) => {
     setMedia((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
   
-  const contienePalabrasProhibidas = (texto) => {
-    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
-    return badWords.some((palabra) => textoNormalizado.includes(palabra));
-  };
-
   return (
     <div className="create-post card p-3 shadow-sm">
       <div className="terminal-box mb-2">

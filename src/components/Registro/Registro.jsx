@@ -16,7 +16,6 @@ function Registro() {
   const [newLanguage, setNewLanguage] = useState("");
   const [user, setUser] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo","zorro","zorra" ];
 
   useEffect(() => {
     const userData = sessionStorage.getItem("userData");
@@ -61,10 +60,7 @@ function Registro() {
       setIsUploading(false);
     }
   };
-  const contienePalabrasProhibidas = (texto) => {
-    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita acentos
-    return badWords.some((palabra) => textoNormalizado.includes(palabra));
-  };
+
 
   const handleRegistro = async () => {
     if (

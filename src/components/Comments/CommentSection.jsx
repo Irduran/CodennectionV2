@@ -19,7 +19,6 @@ const CommentSection = ({ postId }) => {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
   const currentUser = JSON.parse(sessionStorage.getItem("userData"));
-  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo","zorro","zorra" ];
 
   useEffect(() => {
     const commentsRef = collection(db, "posts", postId, "comments");
@@ -36,10 +35,6 @@ const CommentSection = ({ postId }) => {
     return () => unsubscribe();
   }, [postId]);
 
-  const contienePalabrasProhibidas = (texto) => {
-    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita acentos
-    return badWords.some((palabra) => textoNormalizado.includes(palabra));
-  };
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (contienePalabrasProhibidas(comment)) {

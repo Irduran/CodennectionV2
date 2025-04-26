@@ -38,7 +38,6 @@ function EditProfile() {
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [isDeactivated, setIsDeactivated] = useState([]);
-  const badWords = ["puta", "idiota", "estupido", "mierda", "tonto", "imbecil", "perra", "fuck", "slut", "whore", "shit", "nigga", "nigger", "chink", "pija", "malparido", "malparida","gordo","zorro","zorra" ];
 
 
   useEffect(() => {
@@ -95,10 +94,6 @@ function EditProfile() {
     } finally {
       setIsUploading(false);
     }
-  };
-  const contienePalabrasProhibidas = (texto) => {
-    const textoNormalizado = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // quita acentos
-    return badWords.some((palabra) => textoNormalizado.includes(palabra));
   };
   
   const handlePasswordChangeClick = async () => {
