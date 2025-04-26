@@ -126,29 +126,30 @@ export const ProfileHeader = ({ userData, currentUserId, refreshUser }) => {
     try {
       const q = query(
         collection(db, 'notifications'),
-        where('to', '==', recipientId),
-        where('from', '==', currentUserId),
+        where('recipientId', '==', recipientId), // 👈 este campo es importante
+        where('senderId', '==', currentUserId),
         where('type', '==', 'follow_request')
       );
-
+  
       const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        return;
-      }
+      if (!querySnapshot.empty) return; // ya existe
+  
+      await getDocs(q);
+      console.log("currentData al enviar notificación:", currentData);
 
       await addDoc(collection(db, 'notifications'), {
-        to: recipientId,
-        from: currentUserId,
+        recipientId,                      // 👈 quien recibe
+        senderId: currentUserId,          // 👈 quien envió
         type: 'follow_request',
         message: `${currentData?.nombre} sent you a follow request.`,
-        profilePic: currentData?.profilePic,
+        profilePic: currentData?.profilePic || currentData?.profilePicUrl || currentData?.photoURL || "",
         createdAt: serverTimestamp(),
       });
     } catch (error) {
       console.error("Error sending notification:", error);
     }
   };
+  
 
   const handleButtonClick = async () => {
     if (userData?.isPrivate && !isFollowing) {

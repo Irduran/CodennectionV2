@@ -11,12 +11,13 @@ import {
   doc,
   arrayUnion,
   deleteDoc,
+  orderBy,
+  getDocs
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import Swal from "sweetalert2";
 import { 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead 
+  markNotificationAsRead
 } from "../../services/notificationService";
 import "./Notification.css";
 
@@ -24,22 +25,20 @@ export const Notification = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedNotifications, setSelectedNotifications] = useState([]);
   const currentUser = JSON.parse(sessionStorage.getItem("userData"));
 
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    const notificationsRef = collection(db, "notifications");
     const q = query(
-      notificationsRef,
+      collection(db, "notifications"),
       where("recipientId", "==", currentUser.uid),
       limit(50)
     );
 
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allNotifications = [];
-      let unread = 0;
 
       snapshot.docs.forEach(doc => {
         const data = doc.data();
@@ -47,9 +46,15 @@ export const Notification = () => {
           id: doc.id,
           ...data
         });
-        if (!data.read) unread++;
       });
+
+      allNotifications.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return b.createdAt.seconds - a.createdAt.seconds;
+      });
+
       setNotifications(allNotifications);
+      const unread = allNotifications.filter(n => !n.read).length;
       setUnreadCount(unread);
     });
 
@@ -86,20 +91,32 @@ export const Notification = () => {
     }
   };
 
-  const handleSingleRead = async (notificationId) => {
-    await markNotificationAsRead(notificationId);
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    setUnreadCount(prev => prev - 1);
+  const handleSingleRead = (id) => {
+    toggleNotificationSelection(id);
   };
 
-  const handleMarkAllAsRead = async () => {
-    const success = await markAllNotificationsAsRead(currentUser.uid);
-    if (success) {
-      setNotifications([]);
-      setUnreadCount(0);
+  const toggleNotificationSelection = (id) => {
+    setSelectedNotifications(prev =>
+      prev.includes(id)
+        ? prev.filter(n => n !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleDeleteSelected = async () => {
+    try {
+      const deletions = selectedNotifications.map(id =>
+        deleteDoc(doc(db, "notifications", id))
+      );
+      await Promise.all(deletions);
+      setNotifications(prev => prev.filter(n => !selectedNotifications.includes(n.id)));
+      setSelectedNotifications([]);
+    } catch (error) {
+      console.error("Error deleting selected notifications:", error);
+      Swal.fire("Error", "Failed to delete selected notifications.", "error");
     }
   };
-  
+
   return (
     <div className="notification-container">
       <div 
@@ -118,7 +135,7 @@ export const Notification = () => {
             <h4>New Actions🫣</h4>
             {notifications.length > 0 && (
               <button 
-                onClick={handleMarkAllAsRead}
+                onClick={handleDeleteSelected}
                 className="mark-all-read-btn"
               >
                 <FontAwesomeIcon icon={faCheckDouble} /> Bye bye all 👋🏼
@@ -139,12 +156,16 @@ export const Notification = () => {
                       alt="User Profile"
                       className="notification-user-pic"
                     />
-                    <p>{notification.message}</p>
+                    <p>
+                      {notification.type === "follow_request"
+                        ? `${notification.message} (Solicitud de seguimiento)`
+                        : notification.message}
+                    </p>
                     <small>
                       {new Date(notification.createdAt?.seconds * 1000).toLocaleString()}
                     </small>
                   </div>
-                  
+
                   {notification.type === "follow_request" ? (
                     <div className="notification-actions">
                       <button 
@@ -165,7 +186,10 @@ export const Notification = () => {
                       className="mark-read-btn"
                       onClick={() => handleSingleRead(notification.id)}
                     >
-                      <FontAwesomeIcon icon={faCheck} />
+                      <FontAwesomeIcon 
+                        icon={faCheck} 
+                        style={{ color: selectedNotifications.includes(notification.id) ? 'green' : 'gray' }} 
+                      />
                     </button>
                   )}
                 </div>
