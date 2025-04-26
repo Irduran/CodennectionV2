@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { 
+  collection, deleteDoc, doc, getDocs, query, setDoc, updateDoc, where, getDoc 
+} from "firebase/firestore";
 import { deleteUser } from "firebase/auth";
 import { auth, db } from "../../firebase";
 import Swal from "sweetalert2";
 import "./EditProfile.css";
+
 
 function EditProfile() {
   const navigate = useNavigate();
