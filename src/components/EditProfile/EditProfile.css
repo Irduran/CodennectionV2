@@ -330,3 +330,7 @@ button:disabled {
 .delete-button:hover {
   background-color: #e04343;
 }
+
+.change-password-button{
+  margin-right: 20px;
+}
